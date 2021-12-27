@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import TextareaAutosize from "react-textarea-autosize";
+import { targetValueSetter } from "../../Home/Home";
+import { Connection, ConnectionArgs } from "../Connection/Connection";
 import styles from "./Call.module.scss";
 
 import { ReactComponent as RightArrow } from "./right-arrow.svg";
 
-interface Message {
+interface ChatMessage {
   sender: string;
   message: string;
 }
 
-const messages: Message[] = [
+const messages: ChatMessage[] = [
   { sender: "vic", message: "hey, i am home alone" },
   { sender: "tanya", message: "omg me too" },
   { sender: "vic", message: ";)" },
@@ -22,7 +25,7 @@ const messages: Message[] = [
   { sender: "vic", message: "i know baby, i know" },
 ];
 
-const getMessageElement = (msg: Message, i: number) => {
+const getMessageElement = (msg: ChatMessage, i: number) => {
   return (
     <div className={styles.message} key={`chatMessage_${i}`}>
       {msg.sender}: {msg.message}
@@ -30,13 +33,61 @@ const getMessageElement = (msg: Message, i: number) => {
   );
 };
 
+let connection: Connection;
+const connect = (args: ConnectionArgs) => {
+  if (!connection) {
+    console.log("connecting...");
+    connection = new Connection(args);
+  }
+};
+
+const sendMsg = (msg: string) => {
+  connection.sendToServer({
+    type: "message",
+    payload: msg,
+  });
+};
+
+export const getOwnNickname = () => {
+  return window.localStorage.getItem("nickname");
+};
+
 export const Call = () => {
+  const params = useParams();
+  const [chatMessage, setChatMessage] = useState("");
   const [showChat, setShowChat] = useState(true);
   const [showFullChat, setShowFullChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState([] as ChatMessage[]);
 
-  const shownMessages = showFullChat
-    ? messages
-    : messages.slice(messages.length - 3, messages.length);
+  const receiveMsg = (msg: string, sender: string) => {
+    setChatMessages((prevMsgs) => {
+      return [...prevMsgs, { message: msg, sender }];
+    });
+  };
+
+  useEffect(() => {
+    connect({
+      log: () => {
+        console.log("yo log me");
+      },
+      createRemoteVideoElement: () => {
+        console.log("yo create video element");
+      },
+      removeVideoElement: () => {
+        console.log("yo remove video element");
+      },
+      updateConnectionStatus: () => {
+        console.log("yo update connection status");
+      },
+      roomId: params.roomId!,
+      receiveMsg: receiveMsg,
+    });
+  }, []);
+
+  const shownMessages =
+    showFullChat || chatMessages.length <= 3
+      ? chatMessages
+      : chatMessages.slice(chatMessages.length - 3, chatMessages.length);
 
   return (
     <div className={styles.mainContainer}>
@@ -68,8 +119,19 @@ export const Call = () => {
               minRows={1}
               maxRows={6}
               className={styles.chatInput}
+              onChange={targetValueSetter(setChatMessage)}
+              value={chatMessage}
             />
-            <RightArrow className={styles.rightArrow} />
+            <RightArrow
+              className={styles.rightArrow}
+              onClick={() => {
+                if (chatMessage.length > 0) {
+                  sendMsg(chatMessage);
+                  setChatMessage("");
+                  receiveMsg(chatMessage, getOwnNickname() || "me");
+                }
+              }}
+            />
           </div>
         </div>
       </div>

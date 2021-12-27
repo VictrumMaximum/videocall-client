@@ -1,8 +1,8 @@
-import React, { EventHandler, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./Home.module.scss";
 
-const targetValueSetter = (callback: Function) => (e: any) => {
+export const targetValueSetter = (callback: Function) => (e: any) => {
   callback(e.target.value);
 };
 
@@ -34,14 +34,6 @@ export const Home = () => {
       <Link to="room/room2">
         <div className={styles.roomButton}>Room 2</div>
       </Link>
-      {/* <script>
-        document.getElementById("joinRoom").onclick = function (event) {
-            const roomId = document.getElementById("roomInput").value;
-            if (roomId && roomId.length > 0) {
-                window.location.href = "room/" + roomId;
-            }
-        };
-    </script> */}
     </div>
   );
 };
