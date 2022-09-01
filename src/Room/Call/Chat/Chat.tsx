@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 
 import styles from "./Chat.module.scss";
 import { targetValueSetter } from "../../../Home/Home";
 import { ReactComponent as RightArrow } from "./right-arrow.svg";
-import { useSocket } from "../../ConnectionProvider";
+import { useSocket, useSocketListener } from "../Connection/ConnectionProvider";
 
 const getMessageElement = (msg: LocalChatMessage, i: number) => {
   return (
@@ -15,8 +15,8 @@ const getMessageElement = (msg: LocalChatMessage, i: number) => {
 };
 
 interface ReceivedChatMessage {
-  type: "message";
-  message: string; // the actual chat message
+  type: "chatMessage";
+  text: string; // the actual chat message
   nickname?: string;
   source: string;
 }
@@ -26,32 +26,62 @@ interface LocalChatMessage {
   sender: string;
 }
 
+let count = 0;
+
 export const Chat = () => {
+  console.log("Render chat");
+  const lastMessage = useSocketListener("chatMessage");
+  const sendToServer = useSocket();
+
+  // Maybe not useState for this, to prevent so many copies?
+  const [messages, setMessages] = useState([] as LocalChatMessage[]);
+
+  // const addMessage = useCallback(
+  //   (text: string, sender: string) => {
+  //     console.log("receiveMsg from ", sender);
+  //     console.log(text);
+  //     setMessages([...messages, { text, sender }]);
+  //   },
+  //   [messages, setMessages]
+  // );
+
+  useEffect(() => {
+    if (lastMessage && count < 5) {
+      const sender = lastMessage.nickname || lastMessage.source;
+      setMessages((oldMessages) => [
+        ...oldMessages,
+        { text: lastMessage.text, sender },
+      ]);
+      // addMessage(lastMessage.text, sender);
+      count++;
+    }
+  }, [lastMessage, setMessages]);
+
+  const onSend = (text: string) => {
+    sendToServer({
+      type: "chatMessage",
+      text,
+    });
+    setMessages((oldMessages) => [...oldMessages, { text, sender: "me" }]);
+  };
+
+  return <ChatWindow messages={messages} onSend={onSend} />;
+};
+
+interface ChatWindowProps {
+  messages: LocalChatMessage[];
+  onSend: (text: string) => void;
+}
+
+const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
   const [chatMessage, setChatMessage] = useState("");
   const [showChat, setShowChat] = useState(true);
   const [showFullChat, setShowFullChat] = useState(false);
-  const [chatMessages, setChatMessages] = useState([] as LocalChatMessage[]);
-
-  const { lastMessage, sendToServer, nickname, localUserId } =
-    useSocket<ReceivedChatMessage>("message");
-
-  const receiveMsg = (text: string, sender: string) => {
-    console.log("receiveMsg from ", sender);
-    console.log(text);
-    setChatMessages([...chatMessages, { text, sender }]);
-  };
-
-  useEffect(() => {
-    if (lastMessage) {
-      const sender = lastMessage.nickname || lastMessage.source;
-      receiveMsg(lastMessage.message, sender);
-    }
-  }, [lastMessage]);
 
   const shownMessages =
-    showFullChat || chatMessages.length <= 3
-      ? chatMessages
-      : chatMessages.slice(chatMessages.length - 3, chatMessages.length);
+    showFullChat || messages.length <= 3
+      ? messages
+      : messages.slice(messages.length - 3, messages.length);
 
   return (
     <div className={styles.chatContainer}>
@@ -86,12 +116,8 @@ export const Chat = () => {
           className={styles.rightArrow}
           onClick={() => {
             if (chatMessage.length > 0) {
-              sendToServer({
-                type: "message",
-                message: chatMessage,
-              });
+              onSend(chatMessage);
               setChatMessage("");
-              receiveMsg(chatMessage, nickname || "me");
             }
           }}
         />

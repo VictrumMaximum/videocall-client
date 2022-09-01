@@ -12,24 +12,7 @@
 
 .content {
   flex: 1;
-}
-
-.buttonContainer {
-  display: flex;
-  flex-direction: row;
-  height: 40px;
-}
-
-.roundButton {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 1px solid black;
-  flex: 1;
-}
-
-.activeButton {
-  color: green;
+  position: relative;
 }
 
 .bottomBar {
