@@ -1,71 +1,73 @@
-import { createContext, useContext, useRef, useState } from "react";
-import { ConnectingOverlay } from "./ConnectingOverlay/ConnectingOverlay";
-import {
-  useConnection,
-  SocketMessage,
-  socketMessageType,
-  IConnectionContext,
-} from "./Connection";
+export const a = 1;
 
-export const ConnectionContext = createContext({} as any);
+// import { createContext, useContext, useRef, useState } from "react";
+// import { ConnectingOverlay } from "./ConnectingOverlay/ConnectingOverlay";
+// import {
+//   useConnection,
+//   SocketMessage,
+//   socketMessageType,
+//   IConnectionContext,
+// } from "./Connection";
 
-interface ConnectionProviderProps {
-  currentRoomId: string;
-}
+// export const ConnectionContext = createContext({} as any);
 
-export const ConnectionProvider = ({
-  children,
-  currentRoomId,
-}: React.PropsWithChildren<ConnectionProviderProps>) => {
-  console.log("Render Connection Provider");
-  const connection = useConnection();
+// interface ConnectionProviderProps {
+//   currentRoomId: string;
+// }
 
-  const { connected, initialized } = connection;
+// export const ConnectionProvider = ({
+//   children,
+//   currentRoomId,
+// }: React.PropsWithChildren<ConnectionProviderProps>) => {
+//   console.log("Render Connection Provider");
+//   const connection = useConnection();
 
-  return (
-    <ConnectionContext.Provider value={connection}>
-      {!connected && <ConnectingOverlay />}
-      {children}
-    </ConnectionContext.Provider>
-  );
-};
+//   const { connected, initialized } = connection;
 
-export const useSocket = () => {
-  console.log("useSocket");
-  const context = useContext<IConnectionContext>(ConnectionContext);
-  return context.sendToServer;
-};
+//   return (
+//     <ConnectionContext.Provider value={connection}>
+//       {!connected && <ConnectingOverlay />}
+//       {children}
+//     </ConnectionContext.Provider>
+//   );
+// };
 
-export const useSocketListener = <T extends SocketMessage>(
-  expectedMessageType?: socketMessageType
-): T | null => {
-  const context = useContext<IConnectionContext>(ConnectionContext);
-  const lastMessageRef = useRef<T | null>(null);
-  console.log("useSocket hook for messageType:", expectedMessageType);
+// export const useSocket = () => {
+//   console.log("useSocket");
+//   const context = useContext<IConnectionContext>(ConnectionContext);
+//   return context.sendToServer;
+// };
 
-  console.log(context);
+// export const useSocketListener = <T extends SocketMessage>(
+//   expectedMessageType?: socketMessageType
+// ): T | null => {
+//   const context = useContext<IConnectionContext>(ConnectionContext);
+//   const lastMessageRef = useRef<T | null>(null);
+//   console.log("useSocket hook for messageType:", expectedMessageType);
 
-  // TODO: how to know if it's a re-render because of new message, or because of re-render of calling component?
+//   console.log(context);
 
-  if (
-    expectedMessageType &&
-    context.lastMessage &&
-    context.lastMessage.type === expectedMessageType
-  ) {
-    console.log("update ref");
-    lastMessageRef.current = context.lastMessage as T;
-  }
-  return lastMessageRef.current;
-};
+//   // TODO: how to know if it's a re-render because of new message, or because of re-render of calling component?
 
-export const useMySocketListener = (expectedType: string) => {
-  const context = useContext<IConnectionContext>(ConnectionContext);
-  const lastValidMessage = useRef<SocketMessage | null>(null);
-  if (context.lastMessage?.type === expectedType) {
-    lastValidMessage.current = context.lastMessage;
-  }
-  return lastValidMessage.current;
-};
+//   if (
+//     expectedMessageType &&
+//     context.lastMessage &&
+//     context.lastMessage.type === expectedMessageType
+//   ) {
+//     console.log("update ref");
+//     lastMessageRef.current = context.lastMessage as T;
+//   }
+//   return lastMessageRef.current;
+// };
+
+// export const useMySocketListener = (expectedType: string) => {
+//   const context = useContext<IConnectionContext>(ConnectionContext);
+//   const lastValidMessage = useRef<SocketMessage | null>(null);
+//   if (context.lastMessage?.type === expectedType) {
+//     lastValidMessage.current = context.lastMessage;
+//   }
+//   return lastValidMessage.current;
+// };
 
 // const createPeerConnection = (peers: PeersState, remoteUserId: string) => {
 //   console.log("creating peer connection to", remoteUserId);

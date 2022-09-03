@@ -1,80 +1,66 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
-import TextareaAutosize from "react-textarea-autosize";
+import React, { useEffect, useState } from 'react';
+import TextareaAutosize from 'react-textarea-autosize';
 
-import styles from "./Chat.module.scss";
-import { targetValueSetter } from "../../../Home/Home";
-import { ReactComponent as RightArrow } from "./right-arrow.svg";
-import { useSocket, useSocketListener } from "../Connection/ConnectionProvider";
+import styles from './Chat.module.scss';
+import { targetValueSetter } from '../../../Home/Home';
+import { ReactComponent as RightArrow } from './right-arrow.svg';
+import { getConnection } from '../Connection/Connection';
 
-const getMessageElement = (msg: LocalChatMessage, i: number) => {
+type ChatMessage = {
+  from: string;
+  text: string;
+};
+
+const getMessageElement = (msg: ChatMessage, i: number) => {
   return (
     <div className={styles.message} key={`chatMessage_${i}`}>
-      {msg.sender}: {msg.text}
+      {msg.from}: {msg.text}
     </div>
   );
 };
 
-interface ReceivedChatMessage {
-  type: "chatMessage";
-  text: string; // the actual chat message
-  nickname?: string;
-  source: string;
-}
-
-interface LocalChatMessage {
-  text: string;
-  sender: string;
-}
-
-let count = 0;
-
 export const Chat = () => {
-  console.log("Render chat");
-  const lastMessage = useSocketListener("chatMessage");
-  const sendToServer = useSocket();
-
   // Maybe not useState for this, to prevent so many copies?
-  const [messages, setMessages] = useState([] as LocalChatMessage[]);
-
-  // const addMessage = useCallback(
-  //   (text: string, sender: string) => {
-  //     console.log("receiveMsg from ", sender);
-  //     console.log(text);
-  //     setMessages([...messages, { text, sender }]);
-  //   },
-  //   [messages, setMessages]
-  // );
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
-    if (lastMessage && count < 5) {
-      const sender = lastMessage.nickname || lastMessage.source;
-      setMessages((oldMessages) => [
-        ...oldMessages,
-        { text: lastMessage.text, sender },
-      ]);
-      // addMessage(lastMessage.text, sender);
-      count++;
-    }
-  }, [lastMessage, setMessages]);
+    const publisher = getConnection().getPublisher();
+    const x = publisher.subscribe('chatMessage', (msg) => {
+      const chatMessage = {
+        from: msg.source.name || msg.source.id,
+        text: msg.text,
+      };
+      setMessages((currentMessages) => [...currentMessages, chatMessage]);
+    });
+
+    return () => {
+      publisher.unsubscribe('chatMessage', x);
+    };
+  }, []);
 
   const onSend = (text: string) => {
-    sendToServer({
-      type: "chatMessage",
+    const connection = getConnection();
+    connection.sendToServer({
+      type: 'chatMessage',
       text,
     });
-    setMessages((oldMessages) => [...oldMessages, { text, sender: "me" }]);
+    const chatMessage = {
+      from: connection.getLocalUserName() || 'me',
+      text,
+    };
+    setMessages((currentMessages) => [...currentMessages, chatMessage]);
   };
 
   return <ChatWindow messages={messages} onSend={onSend} />;
 };
 
 interface ChatWindowProps {
-  messages: LocalChatMessage[];
+  messages: ChatMessage[];
   onSend: (text: string) => void;
 }
 
 const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
-  const [chatMessage, setChatMessage] = useState("");
+  const [chatMessage, setChatMessage] = useState('');
   const [showChat, setShowChat] = useState(true);
   const [showFullChat, setShowFullChat] = useState(false);
 
@@ -117,7 +103,7 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
           onClick={() => {
             if (chatMessage.length > 0) {
               onSend(chatMessage);
-              setChatMessage("");
+              setChatMessage('');
             }
           }}
         />

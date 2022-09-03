@@ -1,11 +1,25 @@
-import React from "react";
-import styles from "./Call.module.scss";
-import { Chat } from "./Chat/Chat";
-import { ToggleButtons } from "./ToggleButtons/ToggleButtons";
-import { RemoteVideos } from "./Chat/RemoteVideos/RemoteVideos";
-import { LocalVideo } from "./LocalVideo/LocalVideo";
+import React, { useEffect } from 'react';
 
-export const Call = () => {
+import styles from './Call.module.scss';
+import { Chat } from './Chat/Chat';
+import { ToggleButtons } from './ToggleButtons/ToggleButtons';
+import { RemoteVideos } from './Chat/RemoteVideos/RemoteVideos';
+import { LocalVideo } from './LocalVideo/LocalVideo';
+import { getConnection } from './Connection/Connection';
+
+type CallProps = {
+  roomId: string;
+};
+
+export const Call = ({ roomId }: CallProps) => {
+  useEffect(() => {
+    getConnection().connect(roomId);
+
+    return () => {
+      getConnection().disconnect();
+    };
+  }, [roomId]);
+
   return (
     <div className={styles.mainContainer}>
       <div className={styles.topBar}></div>

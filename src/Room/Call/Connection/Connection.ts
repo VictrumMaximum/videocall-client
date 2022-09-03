@@ -1,23 +1,29 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
-import { createRemoteVideo } from "../Chat/RemoteVideos/RemoteVideos";
-import { RegisterPayload } from "./PayloadTypes";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { createRemoteVideo } from '../Chat/RemoteVideos/RemoteVideos';
+import { RegisterPayload } from './PayloadTypes';
+import { SocketPublisher } from './Publisher';
+import {
+  MessageToClientValues,
+  MessageToServerValues,
+  User,
+} from './SocketTypes';
 // import { createPeerConnection, handleMediaOffer } from "./PeerConnection";
 
-export type socketMessageType =
-  | "media-offer"
-  | "media-answer"
-  | "new-ice-candidate"
-  | "user-joined-room"
-  | "register"
-  | "disconnect"
-  | "chatMessage"
-  | "getRoomParticipants";
+// export type socketMessageType =
+//   | 'media-offer'
+//   | 'media-answer'
+//   | 'new-ice-candidate'
+//   | 'user-joined-room'
+//   | 'register'
+//   | 'disconnect'
+//   | 'chatMessage'
+//   | 'getRoomParticipants';
 
-export interface SocketMessage {
-  type: socketMessageType;
-  [key: string]: any;
-}
+// export interface SocketMessage {
+//   type: socketMessageType;
+//   [key: string]: any;
+// }
 
 export interface PeersState {
   [key: string]: {
@@ -28,125 +34,265 @@ export interface PeersState {
 }
 
 const getOwnNickname = () => {
-  return window.localStorage.getItem("nickname");
+  return window.localStorage.getItem('nickname');
 };
 
 const hostName =
-  process.env.NODE_ENV === "development"
-    ? "ws://localhost:9120"
+  process.env.NODE_ENV === 'development'
+    ? 'ws://localhost:9120'
     : `wss://${window.location.host}`;
 
 const socketUrl = `${hostName}/videocall/socket`;
 
-export const useConnection = (): IConnectionContext => {
-  console.log("useConnection");
-  const params = useParams();
-  const roomId = params.roomId;
+class Connection {
+  private roomId: string | null;
+  private connected: boolean;
 
-  // const [peers, setPeers] = useState<PeersState>({});
-  const nicknameRef = useRef<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const [localUserId, setLocalUserId] = useState<string | null>(null);
+  // TODO: put localUserId and nickname in a User type?
+  private localUser: Omit<User, 'id'> & { id?: string };
+  // private localUserId: string | null;
+  // private nickname: string | null;
 
-  const [connected, setConnected] = useState(false);
-  const [lastMessage, setLastMessage] = useState<SocketMessage | null>(null);
+  private socketPublisher: SocketPublisher;
+  private ws: WebSocket | null;
 
-  const sendToServer = useCallback((msg: SocketMessage) => {
-    const ws = wsRef.current;
+  constructor() {
+    this.ws = null;
+    this.roomId = null;
+    this.localUser = {
+      name: getOwnNickname() || undefined,
+    };
+    this.connected = false;
 
-    if (!ws) {
-      console.error("WebSocket not initialized");
+    this.socketPublisher = new SocketPublisher();
+  }
+
+  public connect(roomId: string) {
+    if (this.isOpen(this.ws)) {
+      console.warn('Close the current connection before starting a new one');
       return;
     }
-    ws.send(JSON.stringify(msg));
-  }, []);
 
-  const nickname = nicknameRef.current;
+    this.roomId = roomId;
 
-  useEffect(() => {
-    wsRef.current = new WebSocket(socketUrl);
-    nicknameRef.current = getOwnNickname();
-  }, []);
-
-  useEffect(() => {
-    const ws = wsRef.current;
-    if (!ws) {
-      return;
-    }
+    const ws = new WebSocket(socketUrl);
+    this.ws = ws;
 
     ws.onopen = () => {
-      console.log("WebSocket connected!");
+      console.log('WebSocket connected!');
 
-      setConnected(true);
+      this.connected = true;
 
       // If this is the first time we connect, we expect a userId as response.
       // Otherwise, simply reconnect and continue using old userId.
-      sendToServer({ type: "register", roomId });
+      this.sendToServer({
+        type: 'register',
+        roomId,
+        name: this.localUser.name,
+      });
 
-      ws.onmessage = (msg) => {
-        const data: SocketMessage = JSON.parse(msg.data);
-        if (data.type !== "new-ice-candidate") {
-          console.log("received message:");
-          console.log(data);
-        }
-        switch (data.type) {
-          case "register":
-            const userId = data.userId;
-            setLocalUserId(userId || localUserId); // continue using old id in case of reconnect
-            // for (const otherUser of roomParticipants) {
-            //   createPeerConnection(otherUser.id);
-            // }
-            break;
-          case "user-joined-room":
-            // createPeerConnection(data.source);
-            break;
-          case "media-offer":
-            // handleMediaOffer(data);
-            break;
-          case "media-answer":
-            // handleMediaAnswer(data);
-            break;
-          case "new-ice-candidate":
-            // handleNewICECandidateMsg(data);
-            break;
-          default:
-            setLastMessage(data);
-            break;
-        }
-      };
-
-      ws.onclose = (event) => {
-        console.log("WebSocket closed");
-        // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-        console.log(event); // usual reason code: 1006
-
-        setConnected(false);
-      };
+      ws.onmessage = this.processIncomingMessage;
+      ws.onclose = this.handleOnClose;
     };
-  }, [roomId, sendToServer]);
+  }
 
-  return {
-    localUserId,
-    sendToServer,
-    nickname,
-    // ws: wsRef.current,
-    // peers,
-    connected,
-    lastMessage,
-    initialized: !!localUserId,
-  };
+  private processIncomingMessage(msg: MessageEvent<any>) {
+    const data: MessageToClientValues = JSON.parse(msg.data);
+
+    if (data.type !== 'new-ice-candidate') {
+      console.log('received message:');
+      console.log(data);
+    }
+
+    switch (data.type) {
+      case 'register':
+        const userId = data.userId;
+        // continue using old id in case of reconnect
+
+        this.localUser.id = userId || this.localUser.id;
+        // for (const otherUser of roomParticipants) {
+        //   createPeerConnection(otherUser.id);
+        // }
+        break;
+      // case 'user-joined-room':
+      //   // createPeerConnection(data.source);
+      //   break;
+      // case 'media-offer':
+      //   // handleMediaOffer(data);
+      //   break;
+      // case 'media-answer':
+      //   // handleMediaAnswer(data);
+      //   break;
+      // case 'new-ice-candidate':
+      //   // handleNewICECandidateMsg(data);
+      //   break;
+      default:
+        // Do nothing here, just let the publisher emit the message.
+        break;
+    }
+
+    this.socketPublisher.emit(data);
+  }
+
+  private handleOnClose(event: CloseEvent) {
+    console.log('WebSocket closed');
+    // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+    console.log(event); // usual reason code: 1006
+  }
+
+  public disconnect() {
+    if (this.isOpen(this.ws)) {
+      console.log('Disconnecting...');
+      this.ws.close();
+      this.connected = false;
+      this.ws = null;
+    }
+  }
+
+  public sendToServer(msg: MessageToServerValues) {
+    if (!this.isOpen(this.ws)) {
+      console.error('WebSocket is not connected');
+      return;
+    }
+
+    this.ws.send(JSON.stringify(msg));
+  }
+
+  private isOpen(ws: WebSocket | null): ws is WebSocket {
+    return !!ws && ws.readyState === ws.OPEN;
+  }
+
+  public getPublisher() {
+    return this.socketPublisher;
+  }
+
+  public getLocalUserName() {
+    return this.localUser.name;
+  }
+
+  public getLocalUserId() {
+    return this.localUser.id;
+  }
+}
+
+let instance: Connection | null = null;
+
+export const getConnection = () => {
+  if (!instance) {
+    instance = new Connection();
+  }
+  return instance;
 };
 
-export interface IConnectionContext {
-  localUserId: string | null;
-  nickname: string | null;
-  // ws: WebSocket | null;
-  initialized: boolean;
-  // peers: PeersState;
-  sendToServer: (msg: SocketMessage) => void;
-  connected: boolean;
-  lastMessage: SocketMessage | null;
-}
+// export const useConnection = (): IConnectionContext => {
+//   console.log('useConnection');
+//   const params = useParams();
+//   const roomId = params.roomId;
+
+//   // const [peers, setPeers] = useState<PeersState>({});
+//   const nicknameRef = useRef<string | null>(null);
+//   const wsRef = useRef<WebSocket | null>(null);
+//   const [localUserId, setLocalUserId] = useState<string | null>(null);
+
+//   const [connected, setConnected] = useState(false);
+//   const [lastMessage, setLastMessage] = useState<SocketMessage | null>(null);
+
+//   const sendToServer = useCallback((msg: SocketMessage) => {
+//     const ws = wsRef.current;
+
+//     if (!ws) {
+//       console.error('WebSocket not initialized');
+//       return;
+//     }
+//     ws.send(JSON.stringify(msg));
+//   }, []);
+
+//   const nickname = nicknameRef.current;
+
+//   useEffect(() => {
+//     wsRef.current = new WebSocket(socketUrl);
+//     nicknameRef.current = getOwnNickname();
+//   }, []);
+
+//   useEffect(() => {
+//     const ws = wsRef.current;
+//     if (!ws) {
+//       return;
+//     }
+
+//     ws.onopen = () => {
+//       console.log('WebSocket connected!');
+
+//       setConnected(true);
+
+//       // If this is the first time we connect, we expect a userId as response.
+//       // Otherwise, simply reconnect and continue using old userId.
+//       sendToServer({ type: 'register', roomId });
+
+//       ws.onmessage = (msg) => {
+//         const data: SocketMessage = JSON.parse(msg.data);
+//         if (data.type !== 'new-ice-candidate') {
+//           console.log('received message:');
+//           console.log(data);
+//         }
+//         switch (data.type) {
+//           case 'register':
+//             const userId = data.userId;
+//             setLocalUserId(userId || localUserId); // continue using old id in case of reconnect
+//             // for (const otherUser of roomParticipants) {
+//             //   createPeerConnection(otherUser.id);
+//             // }
+//             break;
+//           case 'user-joined-room':
+//             // createPeerConnection(data.source);
+//             break;
+//           case 'media-offer':
+//             // handleMediaOffer(data);
+//             break;
+//           case 'media-answer':
+//             // handleMediaAnswer(data);
+//             break;
+//           case 'new-ice-candidate':
+//             // handleNewICECandidateMsg(data);
+//             break;
+//           default:
+//             setLastMessage(data);
+//             break;
+//         }
+//       };
+
+//       ws.onclose = (event) => {
+//         console.log('WebSocket closed');
+//         // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+//         console.log(event); // usual reason code: 1006
+
+//         setConnected(false);
+//       };
+//     };
+//   }, [roomId, sendToServer]);
+
+//   return {
+//     localUserId,
+//     sendToServer,
+//     nickname,
+//     // ws: wsRef.current,
+//     // peers,
+//     connected,
+//     lastMessage,
+//     initialized: !!localUserId,
+//   };
+// };
+
+// export interface IConnectionContext {
+//   localUserId: string | null;
+//   nickname: string | null;
+//   // ws: WebSocket | null;
+//   initialized: boolean;
+//   // peers: PeersState;
+//   sendToServer: (msg: SocketMessage) => void;
+//   connected: boolean;
+//   lastMessage: SocketMessage | null;
+// }
 
 // function handleMediaAnswer(data: SocketMessage) {
 //   peers[data.source].peerConnection.setRemoteDescription(
