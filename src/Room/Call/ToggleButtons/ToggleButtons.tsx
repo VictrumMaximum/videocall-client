@@ -6,17 +6,15 @@ import styles from './ToggleButtons.module.scss';
 export const ToggleButtons = () => {
   return (
     <div className={styles.buttonContainer}>
-      <RoundButton onClick={() => toggleCamera()} text="Camera" />
-      <Link to="/videocall">
-        <RoundButton text="Exit" />
-      </Link>
+      <RoundButton onClick={() => toggleCamera()} content="Camera" />
+      <RoundButton content={<Link to="/videocall">Exit</Link>} />
     </div>
   );
 };
 
 interface RoundButtonProps {
   onClick?: (setEnabled: (enabled: boolean) => void) => void;
-  text: string;
+  content: React.ReactNode;
 }
 const RoundButton = (props: RoundButtonProps) => {
   const [enabled, setEnabled] = useState(false);
@@ -42,7 +40,7 @@ const RoundButton = (props: RoundButtonProps) => {
       className={`${styles.roundButton} ${activeClass} ${loadingClass}`}
       onClick={handleOnClick}
     >
-      {props.text}
+      {props.content}
     </div>
   );
 };

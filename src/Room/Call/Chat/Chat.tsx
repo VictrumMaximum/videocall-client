@@ -23,18 +23,37 @@ export const Chat = () => {
   // Maybe not useState for this, to prevent so many copies?
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
+  const addChatMessage = (chatMessage: ChatMessage) => {
+    setMessages((currentMessages) => [...currentMessages, chatMessage]);
+  };
+
   useEffect(() => {
     const publisher = getConnection().getPublisher();
-    const x = publisher.subscribe('chatMessage', (msg) => {
-      const chatMessage = {
+    const a = publisher.subscribe('chatMessage', (msg) => {
+      addChatMessage({
         from: msg.source.name || msg.source.id,
         text: msg.text,
-      };
-      setMessages((currentMessages) => [...currentMessages, chatMessage]);
+      });
+    });
+
+    const b = publisher.subscribe('user-left-room', (msg) => {
+      addChatMessage({
+        from: msg.source.name || msg.source.id,
+        text: `[left the room]`,
+      });
+    });
+
+    const c = publisher.subscribe('user-joined-room', (msg) => {
+      addChatMessage({
+        from: msg.source.name || msg.source.id,
+        text: '[joined the room]',
+      });
     });
 
     return () => {
-      publisher.unsubscribe('chatMessage', x);
+      publisher.unsubscribe('chatMessage', a);
+      publisher.unsubscribe('user-left-room', b);
+      publisher.unsubscribe('user-joined-room', c);
     };
   }, []);
 

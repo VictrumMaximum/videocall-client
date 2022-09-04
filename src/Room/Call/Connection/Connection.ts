@@ -6,7 +6,7 @@ import { SocketPublisher } from './Publisher';
 import {
   MessageToClientValues,
   MessageToServerValues,
-  User,
+  SocketUser,
 } from './SocketTypes';
 // import { createPeerConnection, handleMediaOffer } from "./PeerConnection";
 
@@ -49,12 +49,15 @@ class Connection {
   private connected: boolean;
 
   // TODO: put localUserId and nickname in a User type?
-  private localUser: Omit<User, 'id'> & { id?: string };
+  private localUser: Omit<SocketUser, 'id'> & { id?: string };
   // private localUserId: string | null;
   // private nickname: string | null;
 
   private socketPublisher: SocketPublisher;
   private ws: WebSocket | null;
+
+  // https://www.iana.org/assignments/websocket/websocket.xhtml
+  private readonly EXPLICIT_DISCONNECT_CODE = 1000; // Normal Closure
 
   constructor() {
     this.ws = null;
@@ -65,6 +68,9 @@ class Connection {
     this.connected = false;
 
     this.socketPublisher = new SocketPublisher();
+
+    this.processIncomingMessage = this.processIncomingMessage.bind(this);
+    this.handleOnClose = this.handleOnClose.bind(this);
   }
 
   public connect(roomId: string) {
@@ -107,6 +113,8 @@ class Connection {
     switch (data.type) {
       case 'register':
         const userId = data.userId;
+
+        console.log(this.localUser);
         // continue using old id in case of reconnect
 
         this.localUser.id = userId || this.localUser.id;
@@ -136,16 +144,21 @@ class Connection {
 
   private handleOnClose(event: CloseEvent) {
     console.log('WebSocket closed');
-    // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-    console.log(event); // usual reason code: 1006
+    if (event.code === this.EXPLICIT_DISCONNECT_CODE) {
+      this.connected = false;
+      this.ws = null;
+    } else {
+      // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+      console.error(`UNEXPECTED WEBSOCKET CLOSED, code ${event.code}`); // usual reason code: 1006
+
+      // TODO: reconnect!!!!
+    }
   }
 
   public disconnect() {
     if (this.isOpen(this.ws)) {
       console.log('Disconnecting...');
-      this.ws.close();
-      this.connected = false;
-      this.ws = null;
+      this.ws.close(this.EXPLICIT_DISCONNECT_CODE);
     }
   }
 

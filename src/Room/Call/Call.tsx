@@ -25,7 +25,7 @@ export const Call = ({ roomId }: CallProps) => {
       <div className={styles.topBar}></div>
       <div className={styles.content}>
         <LocalVideo />
-        <RemoteVideos />
+        {/* <RemoteVideos /> */}
         <ToggleButtons />
       </div>
       <div className={styles.bottomBar}>
