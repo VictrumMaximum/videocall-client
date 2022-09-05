@@ -10,11 +10,10 @@
   align-items: center;
   border: 1px solid black;
   flex: 1;
+}
 
-  a {
-    text-decoration: none !important;
-    color: inherit;
-  }
+.roundButton:hover {
+  cursor: pointer;
 }
 
 .activeButton {

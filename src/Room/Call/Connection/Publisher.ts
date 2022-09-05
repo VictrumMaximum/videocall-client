@@ -51,4 +51,8 @@ export class SocketPublisher {
       (sub) => sub.id !== id
     );
   }
+
+  public reset() {
+    this.subscriptions = {};
+  }
 }

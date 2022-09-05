@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from 'react';
 
 interface Props {
   stream: MediaStream;
@@ -11,10 +11,9 @@ export const RemoteVideo = ({ userId, stream }: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      console.log("SET MEDIA STREAM ON REMOTE VIDEO");
-      ref.current.srcObject = new MediaStream();
+      ref.current.srcObject = stream;
     }
-  }, []);
+  }, [stream]);
 
   return <video id={userId} ref={ref} autoPlay></video>;
 };

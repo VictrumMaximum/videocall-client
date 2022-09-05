@@ -1,29 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { createRemoteVideo } from '../Chat/RemoteVideos/RemoteVideos';
-import { RegisterPayload } from './PayloadTypes';
+import { PeerConnectionManager } from './PeerConnection';
 import { SocketPublisher } from './Publisher';
 import {
   MessageToClientValues,
   MessageToServerValues,
   SocketUser,
 } from './SocketTypes';
-// import { createPeerConnection, handleMediaOffer } from "./PeerConnection";
-
-// export type socketMessageType =
-//   | 'media-offer'
-//   | 'media-answer'
-//   | 'new-ice-candidate'
-//   | 'user-joined-room'
-//   | 'register'
-//   | 'disconnect'
-//   | 'chatMessage'
-//   | 'getRoomParticipants';
-
-// export interface SocketMessage {
-//   type: socketMessageType;
-//   [key: string]: any;
-// }
 
 export interface PeersState {
   [key: string]: {
@@ -54,6 +35,7 @@ class Connection {
   // private nickname: string | null;
 
   private socketPublisher: SocketPublisher;
+  private peerConnectionManager: PeerConnectionManager;
   private ws: WebSocket | null;
 
   // https://www.iana.org/assignments/websocket/websocket.xhtml
@@ -68,6 +50,11 @@ class Connection {
     this.connected = false;
 
     this.socketPublisher = new SocketPublisher();
+    this.sendToServer = this.sendToServer.bind(this);
+    this.peerConnectionManager = new PeerConnectionManager(
+      this.socketPublisher,
+      this.sendToServer
+    );
 
     this.processIncomingMessage = this.processIncomingMessage.bind(this);
     this.handleOnClose = this.handleOnClose.bind(this);
@@ -110,33 +97,18 @@ class Connection {
       console.log(data);
     }
 
-    switch (data.type) {
-      case 'register':
-        const userId = data.userId;
+    if (data.type === 'register') {
+      const userId = data.userId;
 
-        console.log(this.localUser);
-        // continue using old id in case of reconnect
+      // continue using old id in case of reconnect
+      this.localUser.id = userId || this.localUser.id;
 
-        this.localUser.id = userId || this.localUser.id;
-        // for (const otherUser of roomParticipants) {
-        //   createPeerConnection(otherUser.id);
-        // }
-        break;
-      // case 'user-joined-room':
-      //   // createPeerConnection(data.source);
-      //   break;
-      // case 'media-offer':
-      //   // handleMediaOffer(data);
-      //   break;
-      // case 'media-answer':
-      //   // handleMediaAnswer(data);
-      //   break;
-      // case 'new-ice-candidate':
-      //   // handleNewICECandidateMsg(data);
-      //   break;
-      default:
-        // Do nothing here, just let the publisher emit the message.
-        break;
+      for (const participant of data.usersInRoom) {
+        this.getPublisher().emit({
+          type: 'user-joined-room',
+          source: participant,
+        });
+      }
     }
 
     this.socketPublisher.emit(data);
@@ -147,6 +119,7 @@ class Connection {
     if (event.code === this.EXPLICIT_DISCONNECT_CODE) {
       this.connected = false;
       this.ws = null;
+      this.tearDown();
     } else {
       // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
       console.error(`UNEXPECTED WEBSOCKET CLOSED, code ${event.code}`); // usual reason code: 1006
@@ -159,7 +132,17 @@ class Connection {
     if (this.isOpen(this.ws)) {
       console.log('Disconnecting...');
       this.ws.close(this.EXPLICIT_DISCONNECT_CODE);
+      this.tearDown();
     }
+  }
+
+  private tearDown() {
+    // Not sure if this is good practice, but we need to somehow ensure that
+    // a new connection is created each time you leave and enter a room.
+    instance = null;
+
+    this.getPeerConnectionManager().reset();
+    this.getPublisher().reset();
   }
 
   public sendToServer(msg: MessageToServerValues) {
@@ -179,6 +162,10 @@ class Connection {
     return this.socketPublisher;
   }
 
+  public getPeerConnectionManager() {
+    return this.peerConnectionManager;
+  }
+
   public getLocalUserName() {
     return this.localUser.name;
   }
@@ -196,105 +183,6 @@ export const getConnection = () => {
   }
   return instance;
 };
-
-// export const useConnection = (): IConnectionContext => {
-//   console.log('useConnection');
-//   const params = useParams();
-//   const roomId = params.roomId;
-
-//   // const [peers, setPeers] = useState<PeersState>({});
-//   const nicknameRef = useRef<string | null>(null);
-//   const wsRef = useRef<WebSocket | null>(null);
-//   const [localUserId, setLocalUserId] = useState<string | null>(null);
-
-//   const [connected, setConnected] = useState(false);
-//   const [lastMessage, setLastMessage] = useState<SocketMessage | null>(null);
-
-//   const sendToServer = useCallback((msg: SocketMessage) => {
-//     const ws = wsRef.current;
-
-//     if (!ws) {
-//       console.error('WebSocket not initialized');
-//       return;
-//     }
-//     ws.send(JSON.stringify(msg));
-//   }, []);
-
-//   const nickname = nicknameRef.current;
-
-//   useEffect(() => {
-//     wsRef.current = new WebSocket(socketUrl);
-//     nicknameRef.current = getOwnNickname();
-//   }, []);
-
-//   useEffect(() => {
-//     const ws = wsRef.current;
-//     if (!ws) {
-//       return;
-//     }
-
-//     ws.onopen = () => {
-//       console.log('WebSocket connected!');
-
-//       setConnected(true);
-
-//       // If this is the first time we connect, we expect a userId as response.
-//       // Otherwise, simply reconnect and continue using old userId.
-//       sendToServer({ type: 'register', roomId });
-
-//       ws.onmessage = (msg) => {
-//         const data: SocketMessage = JSON.parse(msg.data);
-//         if (data.type !== 'new-ice-candidate') {
-//           console.log('received message:');
-//           console.log(data);
-//         }
-//         switch (data.type) {
-//           case 'register':
-//             const userId = data.userId;
-//             setLocalUserId(userId || localUserId); // continue using old id in case of reconnect
-//             // for (const otherUser of roomParticipants) {
-//             //   createPeerConnection(otherUser.id);
-//             // }
-//             break;
-//           case 'user-joined-room':
-//             // createPeerConnection(data.source);
-//             break;
-//           case 'media-offer':
-//             // handleMediaOffer(data);
-//             break;
-//           case 'media-answer':
-//             // handleMediaAnswer(data);
-//             break;
-//           case 'new-ice-candidate':
-//             // handleNewICECandidateMsg(data);
-//             break;
-//           default:
-//             setLastMessage(data);
-//             break;
-//         }
-//       };
-
-//       ws.onclose = (event) => {
-//         console.log('WebSocket closed');
-//         // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-//         console.log(event); // usual reason code: 1006
-
-//         setConnected(false);
-//       };
-//     };
-//   }, [roomId, sendToServer]);
-
-//   return {
-//     localUserId,
-//     sendToServer,
-//     nickname,
-//     // ws: wsRef.current,
-//     // peers,
-//     connected,
-//     lastMessage,
-//     initialized: !!localUserId,
-//   };
-// };
 
 // export interface IConnectionContext {
 //   localUserId: string | null;

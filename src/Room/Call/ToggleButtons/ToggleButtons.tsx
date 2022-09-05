@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { toggleCamera } from '../LocalVideo/LocalVideo';
 import styles from './ToggleButtons.module.scss';
 
-export const ToggleButtons = () => {
+export type ToggleButtonsProps = {
+  components: {
+    content: string;
+    onClick: () => void;
+  }[];
+};
+
+export const ToggleButtons = ({ components }: ToggleButtonsProps) => {
   return (
     <div className={styles.buttonContainer}>
-      <RoundButton onClick={() => toggleCamera()} content="Camera" />
-      <RoundButton content={<Link to="/videocall">Exit</Link>} />
+      {components.map(({ onClick, content }, i) => (
+        // Not really a useful key for React, but these buttons will not change
+        // anyway, so no performance is lost here.
+        <RoundButton key={i} onClick={onClick} content={content} />
+      ))}
     </div>
   );
 };
