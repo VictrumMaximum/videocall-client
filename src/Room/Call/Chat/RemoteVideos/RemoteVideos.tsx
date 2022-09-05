@@ -55,8 +55,6 @@ export const RemoteVideos = () => {
           stream.getAudioTracks()[0].stop();
           stream.removeTrack(stream.getAudioTracks()[0]);
         }
-        console.log('adding track');
-        console.log(track);
         stream.addTrack(track);
       };
     });
