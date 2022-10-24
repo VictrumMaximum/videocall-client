@@ -1,30 +1,34 @@
-import { useState } from 'react';
 import styles from './Room.module.scss';
-import { Welcome } from './Welcome/Welcome';
 import { Call } from './Call/Call';
-import { useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
+import { LocalStorage } from '../LocalStorage/LocalStorage';
+import { useEffect } from 'react';
+
+let filledInDetails = false;
+
+export const setFilledInDetails = (bool: boolean) => (filledInDetails = bool);
 
 export const Room = () => {
-  const [showWelcome, setShowWelcome] = useState(true);
   const params = useParams();
-  const roomId = params.roomId;
+  const roomIdParam = params.roomId;
 
-  if (!roomId) {
-    return <div>No room ID.</div>;
+  useEffect(
+    () => () => {
+      setFilledInDetails(false);
+    },
+    []
+  );
+
+  if (!filledInDetails || !roomIdParam) {
+    const path = `/videocall/${roomIdParam}`;
+    return <Navigate to={path} />;
   }
 
-  const start = (nickname: string) => {
-    if (nickname.length > 0) {
-      window.localStorage.setItem('nickname', nickname);
-    } else {
-      window.localStorage.removeItem('nickname');
-    }
-    setShowWelcome(false);
-  };
+  const nickname = LocalStorage.nickname.getNickname();
 
   return (
     <div className={styles.mainContainer}>
-      {showWelcome ? <Welcome start={start} /> : <Call roomId={roomId} />}
+      <Call roomId={roomIdParam || ''} nickname={nickname} />
     </div>
   );
 };

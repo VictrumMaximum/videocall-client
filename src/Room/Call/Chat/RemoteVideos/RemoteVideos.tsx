@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { getConnection } from '../../Connection/Connection';
 import { RemoteVideo } from './RemoteVideo';
 
+import styles from './RemoteVideos.module.scss';
+
 interface RemoteVideosState {
   [userId: string]: {
     stream: MediaStream;
@@ -72,10 +74,10 @@ export const RemoteVideos = () => {
   }, []);
 
   return (
-    <>
+    <div className={styles.container}>
       {Object.entries(remoteVideos).map(([userId, state]) => (
         <RemoteVideo key={userId} userId={userId} {...state} />
       ))}
-    </>
+    </div>
   );
 };

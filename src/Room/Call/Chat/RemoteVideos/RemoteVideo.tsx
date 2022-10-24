@@ -15,5 +15,5 @@ export const RemoteVideo = ({ userId, stream }: Props) => {
     }
   }, [stream]);
 
-  return <video id={userId} ref={ref} autoPlay></video>;
+  return <video width={'100%'} id={userId} ref={ref} autoPlay></video>;
 };

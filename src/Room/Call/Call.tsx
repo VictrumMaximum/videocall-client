@@ -14,9 +14,12 @@ import { stopStream, toggleCamera } from './Connection/StreamManager';
 
 type CallProps = {
   roomId: string;
+  nickname: string | null;
 };
 
-export const Call = ({ roomId }: CallProps) => {
+export const Call = (props: CallProps) => {
+  const { roomId, nickname } = props;
+
   const navigate = useNavigate();
   const [localCameraStream, setLocalCameraStream] =
     useState<MediaStream | null>(null);
@@ -43,20 +46,17 @@ export const Call = ({ roomId }: CallProps) => {
     {
       content: 'Exit',
       onClick: () => {
-        navigate('/videocall');
+        navigate(`/videocall/${roomId}`);
       },
     },
   ];
 
   return (
     <div className={styles.mainContainer}>
-      <div className={styles.topBar}></div>
-      <div className={styles.content}>
-        {localCameraStream && <LocalVideo stream={localCameraStream} />}
-
-        <RemoteVideos />
-        <ToggleButtons components={toggleButtons} />
-      </div>
+      {/* <div className={styles.topBar}></div> */}
+      {localCameraStream && <LocalVideo stream={localCameraStream} />}
+      <RemoteVideos />
+      <ToggleButtons components={toggleButtons} />
       <div className={styles.bottomBar}>
         <Chat />
       </div>
