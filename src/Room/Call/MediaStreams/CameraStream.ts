@@ -1,4 +1,4 @@
-import { getConnection } from './Connection';
+import { getConnection } from '../SocketConnection/Connection';
 
 const mediaStreamConstraints: MediaStreamConstraints = {
   video: {
@@ -17,6 +17,12 @@ const getCameraStream = (
   });
 };
 
+export const sendCameraStream = (stream: MediaStream) => {
+  getConnection()
+    .getPeerConnectionManager()
+    .sendVideo(stream.getVideoTracks()[0]);
+};
+
 export const toggleCamera = async (
   currentStream: MediaStream | null,
   setStream: (stream: MediaStream | null) => void
@@ -29,9 +35,7 @@ export const toggleCamera = async (
       const stream = await getCameraStream(mediaStreamConstraints.video);
       setStream(stream);
 
-      getConnection()
-        .getPeerConnectionManager()
-        .sendVideo(stream.getVideoTracks()[0]);
+      sendCameraStream(stream);
     } catch (e) {
       console.error('Error while creating local camera stream:');
       console.error(e);

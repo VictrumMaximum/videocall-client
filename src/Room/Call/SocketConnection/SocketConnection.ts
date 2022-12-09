@@ -1,4 +1,4 @@
-import { PeerConnectionManager } from './PeerConnection';
+import { PeerConnectionManager } from '../PeerConnection/PeerConnection';
 import { SocketPublisher } from './Publisher';
 import {
   MessageToClientValues,
@@ -104,11 +104,22 @@ class Connection {
       this.localUser.id = userId || this.localUser.id;
 
       for (const participant of data.usersInRoom) {
+        this.getPeerConnectionManager().createPeerConnection(participant.id);
         this.getPublisher().emit({
           type: 'user-joined-room',
           source: participant,
         });
       }
+    }
+
+    if (data.type === 'user-joined-room') {
+      const remoteUserId = data.source.id;
+      this.getPeerConnectionManager().createPeerConnection(remoteUserId);
+    }
+
+    if (data.type === 'user-left-room') {
+      const remoteUserId = data.source.id;
+      this.getPeerConnectionManager().removePeerConnection(remoteUserId);
     }
 
     this.socketPublisher.emit(data);

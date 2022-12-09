@@ -1,5 +1,8 @@
-import { SocketPublisher } from './Publisher';
-import { MessagesToClient, MessageToServerValues } from './SocketTypes';
+import { SocketPublisher } from '../SocketConnection/Publisher';
+import {
+  MessagesToClient,
+  MessageToServerValues,
+} from '../SocketConnection/SocketTypes';
 
 interface Peers {
   [remoteUserId: string]: {
@@ -65,6 +68,11 @@ export class PeerConnectionManager {
     // myPeerConnection.onicegatheringstatechange = handleICEGatheringStateChangeEvent;
     // myPeerConnection.onsignalingstatechange = () => handleSignalingStateChangeEvent(myPeerConnection);
     return pc;
+  }
+
+  public getPeerConnection(remoteUserId: string) {
+    console.log(this.peers);
+    return this.peers[remoteUserId].peerConnection;
   }
 
   // called by RTCPeerConnection when new ICE candidate is found for our network

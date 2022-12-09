@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 
 import styles from './Chat.module.scss';
-import { targetValueSetter } from '../../../Home/Home';
+import { targetValueSetter } from '../../../Utils/InputUtils';
 import { ReactComponent as RightArrow } from './right-arrow.svg';
-import { getConnection } from '../Connection/Connection';
+import { getConnection } from '../SocketConnection/Connection';
 
 type ChatMessage = {
   from: string;

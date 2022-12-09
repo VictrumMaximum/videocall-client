@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getConnection } from '../../Connection/Connection';
+import { getConnection } from '../SocketConnection/Connection';
 import { RemoteVideo } from './RemoteVideo';
 
 import styles from './RemoteVideos.module.scss';
@@ -11,7 +11,7 @@ interface RemoteVideosState {
   };
 }
 
-export const RemoteVideos = () => {
+const useRemoteVideos = () => {
   const [remoteVideos, setRemoteVideos] = useState<RemoteVideosState>({});
 
   const addRemoteVideo = (
@@ -30,21 +30,28 @@ export const RemoteVideos = () => {
       return copy;
     });
 
+  return { remoteVideos, addRemoteVideo, removeRemoteVideo };
+};
+
+export const RemoteVideos = () => {
+  const { remoteVideos, addRemoteVideo, removeRemoteVideo } = useRemoteVideos();
+
   useEffect(() => {
     const connection = getConnection();
     const publisher = connection.getPublisher();
     const peerConnectionManager = connection.getPeerConnectionManager();
 
+    console.log('subscribing in RemoteVideos');
     const a = publisher.subscribe('user-joined-room', (msg) => {
-      const remoteUserId = msg.source.id;
-      const pc = peerConnectionManager.createPeerConnection(remoteUserId);
-
       const stream = new MediaStream();
 
       addRemoteVideo(msg.source.id, {
         stream,
         name: msg.source.name,
       });
+
+      const remoteUserId = msg.source.id;
+      const pc = peerConnectionManager.getPeerConnection(remoteUserId);
 
       pc.ontrack = (event: RTCTrackEvent) => {
         const track = event.track;
@@ -64,14 +71,13 @@ export const RemoteVideos = () => {
     const b = publisher.subscribe('user-left-room', (msg) => {
       const userId = msg.source.id;
       removeRemoteVideo(userId);
-      peerConnectionManager.removePeerConnection(userId);
     });
 
     return () => {
       publisher.unsubscribe('user-joined-room', a);
       publisher.unsubscribe('user-left-room', b);
     };
-  }, []);
+  }, [addRemoteVideo, removeRemoteVideo]);
 
   return (
     <div className={styles.container}>

@@ -6,11 +6,15 @@ import {
   ToggleButtons,
   ToggleButtonsProps,
 } from './ToggleButtons/ToggleButtons';
-import { RemoteVideos } from './Chat/RemoteVideos/RemoteVideos';
+import { RemoteVideos } from './RemoteVideos/RemoteVideos';
 import { LocalVideo } from './LocalVideo/LocalVideo';
-import { getConnection } from './Connection/Connection';
+import { getConnection } from './SocketConnection/Connection';
 import { useNavigate } from 'react-router-dom';
-import { stopStream, toggleCamera } from './Connection/StreamManager';
+import {
+  sendCameraStream,
+  stopStream,
+  toggleCamera,
+} from './MediaStreams/CameraStream';
 
 type CallProps = {
   roomId: string;
@@ -28,8 +32,17 @@ export const Call = (props: CallProps) => {
     const connection = getConnection();
     connection.connect(roomId);
 
+    const subHandle = connection
+      .getPublisher()
+      .subscribe('user-joined-room', (msg) => {
+        if (localCameraStream) {
+          sendCameraStream(localCameraStream);
+        }
+      });
+
     return () => {
       connection.disconnect();
+      connection.getPublisher().unsubscribe('user-joined-room', subHandle);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

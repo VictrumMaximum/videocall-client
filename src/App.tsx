@@ -1,7 +1,7 @@
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 
-import { Welcome } from './Room/Welcome/Welcome';
+import { Welcome } from './Welcome/Welcome';
 
 import './global.scss';
 import { Room } from './Room/Room';

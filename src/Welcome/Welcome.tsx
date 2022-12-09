@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { targetValueSetter } from '../../Home/Home';
+
 import styles from './Welcome.module.scss';
 
 import { ReactComponent as CircleIcon } from './circle.svg';
 import { useNavigate, useParams } from 'react-router-dom';
-import { LocalStorage } from '../../LocalStorage/LocalStorage';
-import { setFilledInDetails } from '../Room';
+import { LocalStorage } from '../Utils/LocalStorage/LocalStorage';
+import { setFilledInDetails } from '../Room/Room';
+import { targetValueSetter } from '../Utils/InputUtils';
 
 interface Props {}
 
