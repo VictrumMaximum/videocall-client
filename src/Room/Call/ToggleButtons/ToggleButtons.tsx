@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStreams } from '../MediaStreams/CameraStream';
-import { usePeers } from '../PeerConnection/PeerContext';
 import styles from './ToggleButtons.module.scss';
 
 type ToggleButton = {
@@ -11,16 +10,12 @@ type ToggleButton = {
 
 export const ToggleButtons = (props: { roomId: string }) => {
   const { toggleCamera } = useStreams();
-  const { sendVideo } = usePeers();
   const navigate = useNavigate();
 
   const toggleButtons: ToggleButton[] = [
     {
       content: 'Camera',
-      onClick: async () => {
-        await toggleCamera();
-        sendVideo();
-      },
+      onClick: toggleCamera,
     },
     {
       content: 'Exit',

@@ -1,3 +1,11 @@
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { SocketPublisher } from './Publisher';
 import {
   MessageToClientValues,
@@ -25,6 +33,8 @@ const hostName =
 const socketUrl = `${hostName}/videocall/socket`;
 
 export type SendToServer = (msg: MessageToServerValues) => void;
+
+// TODO: rewrite this to a context + hook
 
 class SocketConnection {
   private roomId: string;
@@ -167,7 +177,7 @@ class SocketConnection {
 
 let instance: SocketConnection | null = null;
 
-export const initSocketConnection = (
+const initSocketConnection = (
   roomId: string,
   setIsConnected: (isConnected: boolean) => void
 ) => {
@@ -176,4 +186,44 @@ export const initSocketConnection = (
   }
 
   return instance;
+};
+
+export interface ISocketContext {
+  socketConnection: SocketConnection;
+  isConnected: boolean;
+}
+
+const SocketContext = createContext<ISocketContext | null>(null);
+
+type SocketProviderProps = {
+  roomId: string;
+};
+
+export const SocketProvider = ({
+  children,
+  roomId,
+}: React.PropsWithChildren<SocketProviderProps>) => {
+  const [isConnected, setIsConnected] = useState(false);
+  const socketConnection = useRef(initSocketConnection(roomId, setIsConnected));
+
+  const value = useMemo(
+    () => ({ socketConnection: socketConnection.current, isConnected }),
+    [isConnected]
+  );
+
+  useEffect(() => () => socketConnection.current.disconnect(), []);
+
+  return (
+    <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
+  );
+};
+
+export const useSocket = () => {
+  const context = useContext(SocketContext);
+
+  if (!context) {
+    throw new Error('CallContext is not defined!');
+  }
+
+  return context;
 };

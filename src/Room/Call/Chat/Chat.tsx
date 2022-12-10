@@ -4,7 +4,7 @@ import TextareaAutosize from 'react-textarea-autosize';
 import styles from './Chat.module.scss';
 import { targetValueSetter } from '../../../Utils/InputUtils';
 import { ReactComponent as RightArrow } from './right-arrow.svg';
-import { useConnections } from '../Call';
+import { useSocket } from '../SocketConnection/SocketConnection';
 
 type ChatMessage = {
   from: string;
@@ -23,7 +23,7 @@ export const Chat = () => {
   // Maybe not useState for this, to prevent so many copies?
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  const { socketConnection } = useConnections();
+  const { socketConnection } = useSocket();
 
   const addChatMessage = (chatMessage: ChatMessage) => {
     setMessages((currentMessages) => [...currentMessages, chatMessage]);
