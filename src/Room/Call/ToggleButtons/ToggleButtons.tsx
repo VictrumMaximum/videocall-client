@@ -1,17 +1,38 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useStreams } from '../MediaStreams/CameraStream';
+import { usePeers } from '../PeerConnection/PeerContext';
 import styles from './ToggleButtons.module.scss';
 
-export type ToggleButtonsProps = {
-  components: {
-    content: string;
-    onClick: () => void;
-  }[];
+type ToggleButton = {
+  content: string;
+  onClick: () => void;
 };
 
-export const ToggleButtons = ({ components }: ToggleButtonsProps) => {
+export const ToggleButtons = (props: { roomId: string }) => {
+  const { toggleCamera } = useStreams();
+  const { sendVideo } = usePeers();
+  const navigate = useNavigate();
+
+  const toggleButtons: ToggleButton[] = [
+    {
+      content: 'Camera',
+      onClick: async () => {
+        await toggleCamera();
+        sendVideo();
+      },
+    },
+    {
+      content: 'Exit',
+      onClick: () => {
+        navigate(`/videocall/${props.roomId}`);
+      },
+    },
+  ];
+
   return (
     <div className={styles.buttonContainer}>
-      {components.map(({ onClick, content }, i) => (
+      {toggleButtons.map(({ onClick, content }, i) => (
         // Not really a useful key for React, but these buttons will not change
         // anyway, so no performance is lost here.
         <RoundButton key={i} onClick={onClick} content={content} />

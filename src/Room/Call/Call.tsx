@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import styles from './Call.module.scss';
 import { Chat } from './Chat/Chat';
-import {
-  ToggleButtons,
-  ToggleButtonsProps,
-} from './ToggleButtons/ToggleButtons';
+import { ToggleButtons } from './ToggleButtons/ToggleButtons';
 import { RemoteVideos } from './RemoteVideos/RemoteVideos';
 import { LocalVideo } from './LocalVideo/LocalVideo';
-import { getConnection } from './SocketConnection/Connection';
+import { initSocketConnection } from './SocketConnection/SocketConnection';
 import { useNavigate } from 'react-router-dom';
-import {
-  sendCameraStream,
-  stopStream,
-  toggleCamera,
-} from './MediaStreams/CameraStream';
+import { StreamProvider, useStreams } from './MediaStreams/CameraStream';
+import { PeersProvider } from './PeerConnection/PeerContext';
 
 type CallProps = {
   roomId: string;
@@ -24,55 +24,75 @@ type CallProps = {
 export const Call = (props: CallProps) => {
   const { roomId, nickname } = props;
 
-  const navigate = useNavigate();
-  const [localCameraStream, setLocalCameraStream] =
-    useState<MediaStream | null>(null);
+  // const [peers, setPeers] = useState<Peers>({});
+  const [isConnected, setIsConnected] = useState(false);
+
+  const socketConnection = useMemo(
+    () => initSocketConnection(roomId, setIsConnected),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  // const peerConnectionManager = useMemo(
+  //   () =>
+  //     initPeerConnectionManager(
+  //       socketConnection,
+  //       streamManager,
+  //       peers,
+  //       setPeers
+  //     ),
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  //   []
+  // );
 
   useEffect(() => {
-    const connection = getConnection();
-    connection.connect(roomId);
-
-    const subHandle = connection
-      .getPublisher()
-      .subscribe('user-joined-room', (msg) => {
-        if (localCameraStream) {
-          sendCameraStream(localCameraStream);
-        }
-      });
-
     return () => {
-      connection.disconnect();
-      connection.getPublisher().unsubscribe('user-joined-room', subHandle);
+      socketConnection.disconnect();
+      // peerConnectionManager.reset();
+      // streamManager.stopStream();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Second unmounting callback, because I don't want to put localCameraStream
-  // in the dependency array of the first useEffect()
-  useEffect(() => () => stopStream(localCameraStream), [localCameraStream]);
+  // useEffect(() => {
+  //   if (localCameraStream) {
+  //     peerConnectionManager.sendVideo();
+  //   }
+  // }, [localCameraStream, peerConnectionManager]);
 
-  const toggleButtons: ToggleButtonsProps['components'] = [
-    {
-      content: 'Camera',
-      onClick: () => toggleCamera(localCameraStream, setLocalCameraStream),
-    },
-    {
-      content: 'Exit',
-      onClick: () => {
-        navigate(`/videocall/${roomId}`);
-      },
-    },
-  ];
+  console.log('hi');
 
   return (
-    <div className={styles.mainContainer}>
-      {/* <div className={styles.topBar}></div> */}
-      {localCameraStream && <LocalVideo stream={localCameraStream} />}
-      <RemoteVideos />
-      <ToggleButtons components={toggleButtons} />
-      <div className={styles.bottomBar}>
-        <Chat />
-      </div>
-    </div>
+    <SocketContext.Provider value={{ socketConnection }}>
+      <StreamProvider>
+        <PeersProvider>
+          <div className={styles.mainContainer}>
+            {/* <div className={styles.topBar}></div> */}
+            {<LocalVideo />}
+            <RemoteVideos />
+            <ToggleButtons roomId={roomId} />
+            <div className={styles.bottomBar}>
+              <Chat />
+            </div>
+          </div>
+        </PeersProvider>
+      </StreamProvider>
+    </SocketContext.Provider>
   );
+};
+
+interface ISocketContext {
+  socketConnection: ReturnType<typeof initSocketConnection>;
+}
+
+const SocketContext = createContext<ISocketContext | null>(null);
+
+export const useConnections = () => {
+  const context = useContext(SocketContext);
+
+  if (!context) {
+    throw new Error('CallContext is not defined!');
+  }
+
+  return context;
 };

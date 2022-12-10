@@ -28,13 +28,14 @@ export class SocketPublisher {
       this.subscriptions[msgType] = subscribers;
     }
 
-    const max = subscribers.reduce((acc, x) => Math.max(acc, x.id), 0);
+    const id = this.getUniqueId();
 
     subscribers.push({
-      id: max + 1,
+      id,
       callback: callback as CallBack<MessageToClientValues>,
     });
-    return max + 1;
+
+    return id;
   }
 
   public emit(msg: MessageToClientValues) {
@@ -46,13 +47,26 @@ export class SocketPublisher {
     }
   }
 
-  public unsubscribe(msgType: MessageToClientType, id: number) {
-    this.subscriptions[msgType] = this.subscriptions[msgType]?.filter(
-      (sub) => sub.id !== id
-    );
+  public unsubscribe(id: number) {
+    for (const [msgType, subscribers] of Object.entries(this.subscriptions)) {
+      if (subscribers.some((sub) => sub.id === id)) {
+        this.subscriptions[msgType as keyof Subscriptions] = subscribers.filter(
+          (sub) => sub.id !== id
+        );
+        break;
+      }
+    }
   }
 
   public reset() {
     this.subscriptions = {};
+  }
+
+  private getUniqueId() {
+    const currentMax = Object.values(this.subscriptions).reduce((acc, x) => {
+      return Math.max(acc, ...x.map((s) => s.id));
+    }, 0);
+
+    return currentMax + 1;
   }
 }

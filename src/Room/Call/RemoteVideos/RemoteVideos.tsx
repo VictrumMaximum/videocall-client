@@ -1,89 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { getConnection } from '../SocketConnection/Connection';
+import React from 'react';
+import { usePeers } from '../PeerConnection/PeerContext';
 import { RemoteVideo } from './RemoteVideo';
 
 import styles from './RemoteVideos.module.scss';
 
-interface RemoteVideosState {
-  [userId: string]: {
-    stream: MediaStream;
-    name?: string;
-  };
-}
-
-const useRemoteVideos = () => {
-  const [remoteVideos, setRemoteVideos] = useState<RemoteVideosState>({});
-
-  const addRemoteVideo = (
-    userId: string,
-    remoteVideo: RemoteVideosState[string]
-  ) =>
-    setRemoteVideos((currentVideos) => ({
-      ...currentVideos,
-      [userId]: remoteVideo,
-    }));
-
-  const removeRemoteVideo = (userId: string) =>
-    setRemoteVideos((currentVideos) => {
-      const copy = { ...currentVideos };
-      delete copy[userId];
-      return copy;
-    });
-
-  return { remoteVideos, addRemoteVideo, removeRemoteVideo };
-};
-
 export const RemoteVideos = () => {
-  const { remoteVideos, addRemoteVideo, removeRemoteVideo } = useRemoteVideos();
-
-  useEffect(() => {
-    const connection = getConnection();
-    const publisher = connection.getPublisher();
-    const peerConnectionManager = connection.getPeerConnectionManager();
-
-    console.log('subscribing in RemoteVideos');
-    const a = publisher.subscribe('user-joined-room', (msg) => {
-      const stream = new MediaStream();
-
-      addRemoteVideo(msg.source.id, {
-        stream,
-        name: msg.source.name,
-      });
-
-      const remoteUserId = msg.source.id;
-      const pc = peerConnectionManager.getPeerConnection(remoteUserId);
-
-      pc.ontrack = (event: RTCTrackEvent) => {
-        const track = event.track;
-
-        if (track.kind === 'video' && stream.getVideoTracks()[0]) {
-          stream.getVideoTracks()[0].stop();
-          stream.removeTrack(stream.getVideoTracks()[0]);
-        }
-        if (track.kind === 'audio' && stream.getAudioTracks()[0]) {
-          stream.getAudioTracks()[0].stop();
-          stream.removeTrack(stream.getAudioTracks()[0]);
-        }
-        stream.addTrack(track);
-      };
-    });
-
-    const b = publisher.subscribe('user-left-room', (msg) => {
-      const userId = msg.source.id;
-      removeRemoteVideo(userId);
-    });
-
-    return () => {
-      publisher.unsubscribe('user-joined-room', a);
-      publisher.unsubscribe('user-left-room', b);
-    };
-  }, [addRemoteVideo, removeRemoteVideo]);
+  const { peers } = usePeers();
 
   return (
     <div className={styles.container}>
-      {Object.entries(remoteVideos).map(([userId, state]) => (
-        <RemoteVideo key={userId} userId={userId} {...state} />
-      ))}
+      {Object.entries(peers).map(([userId, state]) => {
+        return <RemoteVideo key={userId} userId={userId} {...state} />;
+      })}
     </div>
   );
 };

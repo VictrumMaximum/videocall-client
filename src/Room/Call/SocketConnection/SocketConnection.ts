@@ -1,4 +1,3 @@
-import { PeerConnectionManager } from '../PeerConnection/PeerConnection';
 import { SocketPublisher } from './Publisher';
 import {
   MessageToClientValues,
@@ -25,68 +24,64 @@ const hostName =
 
 const socketUrl = `${hostName}/videocall/socket`;
 
-class Connection {
-  private roomId: string | null;
-  private connected: boolean;
+export type SendToServer = (msg: MessageToServerValues) => void;
+
+class SocketConnection {
+  private roomId: string;
 
   // TODO: put localUserId and nickname in a User type?
   private localUser: Omit<SocketUser, 'id'> & { id?: string };
-  // private localUserId: string | null;
-  // private nickname: string | null;
 
   private socketPublisher: SocketPublisher;
-  private peerConnectionManager: PeerConnectionManager;
-  private ws: WebSocket | null;
+  private ws: WebSocket;
+
+  private setIsConnected: (isConnected: boolean) => void;
 
   // https://www.iana.org/assignments/websocket/websocket.xhtml
   private readonly EXPLICIT_DISCONNECT_CODE = 1000; // Normal Closure
 
-  constructor() {
-    this.ws = null;
-    this.roomId = null;
-    this.localUser = {
-      name: getOwnNickname() || undefined,
-    };
-    this.connected = false;
+  constructor(roomId: string, setIsConnected: (isConnected: boolean) => void) {
+    this.roomId = roomId;
+    this.setIsConnected = setIsConnected;
 
     this.socketPublisher = new SocketPublisher();
-    this.sendToServer = this.sendToServer.bind(this);
-    this.peerConnectionManager = new PeerConnectionManager(
-      this.socketPublisher,
-      this.sendToServer
-    );
+    this.ws = this.connect();
 
+    this.localUser = {
+      name: getOwnNickname() ?? undefined,
+    };
+
+    this.sendToServer = this.sendToServer.bind(this);
     this.processIncomingMessage = this.processIncomingMessage.bind(this);
     this.handleOnClose = this.handleOnClose.bind(this);
   }
 
-  public connect(roomId: string) {
-    if (this.isOpen(this.ws)) {
-      console.warn('Close the current connection before starting a new one');
-      return;
+  private connect() {
+    if (this.isConnected()) {
+      console.warn('Cannot connect: Already connected');
+      return this.ws;
     }
 
-    this.roomId = roomId;
-
     const ws = new WebSocket(socketUrl);
-    this.ws = ws;
 
     ws.onopen = () => {
       console.log('WebSocket connected!');
 
-      this.connected = true;
+      this.setIsConnected(true);
 
       // If this is the first time we connect, we expect a userId as response.
       // Otherwise, simply reconnect and continue using old userId.
       this.sendToServer({
         type: 'register',
-        roomId,
+        roomId: this.roomId,
         name: this.localUser.name,
       });
 
       ws.onmessage = this.processIncomingMessage;
       ws.onclose = this.handleOnClose;
     };
+
+    return ws;
   }
 
   private processIncomingMessage(msg: MessageEvent<any>) {
@@ -104,46 +99,44 @@ class Connection {
       this.localUser.id = userId || this.localUser.id;
 
       for (const participant of data.usersInRoom) {
-        this.getPeerConnectionManager().createPeerConnection(participant.id);
-        this.getPublisher().emit({
+        this.socketPublisher.emit({
           type: 'user-joined-room',
           source: participant,
         });
       }
     }
 
-    if (data.type === 'user-joined-room') {
-      const remoteUserId = data.source.id;
-      this.getPeerConnectionManager().createPeerConnection(remoteUserId);
-    }
-
-    if (data.type === 'user-left-room') {
-      const remoteUserId = data.source.id;
-      this.getPeerConnectionManager().removePeerConnection(remoteUserId);
-    }
-
     this.socketPublisher.emit(data);
   }
 
+  public sendToServer: SendToServer = (msg) => {
+    if (!this.isConnected()) {
+      console.error('WebSocket is not connected');
+      return;
+    }
+
+    this.ws.send(JSON.stringify(msg));
+  };
+
   private handleOnClose(event: CloseEvent) {
-    console.log('WebSocket closed');
+    this.setIsConnected(false);
+
     if (event.code === this.EXPLICIT_DISCONNECT_CODE) {
-      this.connected = false;
-      this.ws = null;
+      console.log('WebSocket closed (explicit)');
       this.tearDown();
     } else {
       // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-      console.error(`UNEXPECTED WEBSOCKET CLOSED, code ${event.code}`); // usual reason code: 1006
+      console.error(`Unexpected websocket close, code ${event.code}`); // usual reason code: 1006
 
-      // TODO: reconnect!!!!
+      // Reconnect
+      this.connect();
     }
   }
 
   public disconnect() {
-    if (this.isOpen(this.ws)) {
+    if (this.isConnected()) {
       console.log('Disconnecting...');
       this.ws.close(this.EXPLICIT_DISCONNECT_CODE);
-      this.tearDown();
     }
   }
 
@@ -152,29 +145,15 @@ class Connection {
     // a new connection is created each time you leave and enter a room.
     instance = null;
 
-    this.getPeerConnectionManager().reset();
     this.getPublisher().reset();
   }
 
-  public sendToServer(msg: MessageToServerValues) {
-    if (!this.isOpen(this.ws)) {
-      console.error('WebSocket is not connected');
-      return;
-    }
-
-    this.ws.send(JSON.stringify(msg));
-  }
-
-  private isOpen(ws: WebSocket | null): ws is WebSocket {
-    return !!ws && ws.readyState === ws.OPEN;
+  private isConnected() {
+    return this.ws && this.ws.readyState === this.ws.OPEN;
   }
 
   public getPublisher() {
     return this.socketPublisher;
-  }
-
-  public getPeerConnectionManager() {
-    return this.peerConnectionManager;
   }
 
   public getLocalUserName() {
@@ -186,38 +165,15 @@ class Connection {
   }
 }
 
-let instance: Connection | null = null;
+let instance: SocketConnection | null = null;
 
-export const getConnection = () => {
+export const initSocketConnection = (
+  roomId: string,
+  setIsConnected: (isConnected: boolean) => void
+) => {
   if (!instance) {
-    instance = new Connection();
+    instance = new SocketConnection(roomId, setIsConnected);
   }
+
   return instance;
 };
-
-// export interface IConnectionContext {
-//   localUserId: string | null;
-//   nickname: string | null;
-//   // ws: WebSocket | null;
-//   initialized: boolean;
-//   // peers: PeersState;
-//   sendToServer: (msg: SocketMessage) => void;
-//   connected: boolean;
-//   lastMessage: SocketMessage | null;
-// }
-
-// function handleMediaAnswer(data: SocketMessage) {
-//   peers[data.source].peerConnection.setRemoteDescription(
-//     new RTCSessionDescription(data.sdp)
-//   );
-//   createRemoteVideo(data.source, data.nickname);
-// }
-
-// // event handler for when remote user makes a potential ICE candidate known for his network
-// export function handleNewICECandidateMsg(msg: SocketMessage) {
-//   if (peers[msg.source]) {
-//     peers[msg.source].peerConnection
-//       .addIceCandidate(new RTCIceCandidate(msg.candidate))
-//       .catch(console.error);
-//   }
-// }

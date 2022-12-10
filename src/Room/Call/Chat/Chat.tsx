@@ -4,7 +4,7 @@ import TextareaAutosize from 'react-textarea-autosize';
 import styles from './Chat.module.scss';
 import { targetValueSetter } from '../../../Utils/InputUtils';
 import { ReactComponent as RightArrow } from './right-arrow.svg';
-import { getConnection } from '../SocketConnection/Connection';
+import { useConnections } from '../Call';
 
 type ChatMessage = {
   from: string;
@@ -23,12 +23,14 @@ export const Chat = () => {
   // Maybe not useState for this, to prevent so many copies?
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
+  const { socketConnection } = useConnections();
+
   const addChatMessage = (chatMessage: ChatMessage) => {
     setMessages((currentMessages) => [...currentMessages, chatMessage]);
   };
 
   useEffect(() => {
-    const publisher = getConnection().getPublisher();
+    const publisher = socketConnection.getPublisher();
     const a = publisher.subscribe('chatMessage', (msg) => {
       addChatMessage({
         from: msg.source.name || msg.source.id,
@@ -51,20 +53,19 @@ export const Chat = () => {
     });
 
     return () => {
-      publisher.unsubscribe('chatMessage', a);
-      publisher.unsubscribe('user-left-room', b);
-      publisher.unsubscribe('user-joined-room', c);
+      publisher.unsubscribe(a);
+      publisher.unsubscribe(b);
+      publisher.unsubscribe(c);
     };
-  }, []);
+  }, [socketConnection]);
 
   const onSend = (text: string) => {
-    const connection = getConnection();
-    connection.sendToServer({
+    socketConnection.sendToServer({
       type: 'chatMessage',
       text,
     });
     const chatMessage = {
-      from: connection.getLocalUserName() || 'me',
+      from: socketConnection.getLocalUserName() || 'me',
       text,
     };
     setMessages((currentMessages) => [...currentMessages, chatMessage]);

@@ -1,11 +1,9 @@
 import React, { useEffect, useRef } from 'react';
+import { useStreams } from '../MediaStreams/CameraStream';
 import styles from './LocalVideo.module.scss';
 
-type LocalVideoProps = {
-  stream: MediaStream;
-};
-
-export const LocalVideo = ({ stream }: LocalVideoProps) => {
+export const LocalVideo = () => {
+  const { localCameraStream: stream } = useStreams();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -13,6 +11,10 @@ export const LocalVideo = ({ stream }: LocalVideoProps) => {
       videoRef.current.srcObject = stream;
     }
   }, [stream]);
+
+  if (!stream) {
+    return null;
+  }
 
   return (
     <div className={styles.localVideoContainer}>

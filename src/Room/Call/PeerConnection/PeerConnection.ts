@@ -1,62 +1,98 @@
-import { SocketPublisher } from '../SocketConnection/Publisher';
-import {
-  MessagesToClient,
-  MessageToServerValues,
-} from '../SocketConnection/SocketTypes';
+import { initSocketConnection } from '../SocketConnection/SocketConnection';
+import { MessagesToClient } from '../SocketConnection/SocketTypes';
 
-interface Peers {
+export interface Peers {
   [remoteUserId: string]: {
     peerConnection: RTCPeerConnection;
+    stream: MediaStream;
     videoSender?: RTCRtpSender;
   };
 }
 
-export class PeerConnectionManager {
+type SocketConnection = ReturnType<typeof initSocketConnection>;
+// type StreamManager = ReturnType<typeof initStreamManager>;
+
+class PeerConnectionManager {
   private peers: Peers;
-  private socketPublisher: SocketPublisher;
-  private sendToServer: (msg: MessageToServerValues) => void;
+  private setPeers: (peers: Peers) => void;
+  private socketConnection: SocketConnection;
+  // private streamManager: StreamManager;
 
   constructor(
-    socketPublisher: SocketPublisher,
-    sendToServer: (msg: MessageToServerValues) => void
+    socketConnection: SocketConnection,
+    // streamManager: StreamManager,
+    peers: Peers,
+    setPeers: (peers: Peers) => void
   ) {
-    this.peers = {};
-    this.socketPublisher = socketPublisher;
-    this.sendToServer = sendToServer;
+    this.peers = peers;
+    this.setPeers = setPeers;
+    this.socketConnection = socketConnection;
+    // this.streamManager = streamManager;
 
-    this.socketPublisher.subscribe('media-offer', (msg) =>
-      this.handleMediaOffer(msg)
+    const socketPublisher = this.socketConnection.getPublisher();
+
+    socketPublisher.subscribe('media-offer', this.handleMediaOffer);
+    socketPublisher.subscribe('media-answer', this.handleMediaAnswer);
+    socketPublisher.subscribe(
+      'new-ice-candidate',
+      this.handleNewICECandidateMsg
     );
 
-    this.socketPublisher.subscribe('media-answer', (msg) =>
-      this.handleMediaAnswer(msg)
-    );
+    socketPublisher.subscribe('user-joined-room', (msg) => {
+      // this.sendVideo();
 
-    this.socketPublisher.subscribe('new-ice-candidate', (msg) =>
-      this.handleNewICECandidateMsg(msg)
-    );
+      const peer = this.createPeer(msg.source.id);
+      const stream = peer.stream;
 
-    this.createPeerConnection = this.createPeerConnection.bind(this);
-    this.sendVideo = this.sendVideo.bind(this);
+      peer.peerConnection.ontrack = (event: RTCTrackEvent) => {
+        console.log('ontrack');
+        const track = event.track;
+
+        if (track.kind === 'video' && stream.getVideoTracks()[0]) {
+          stream.getVideoTracks()[0].stop();
+          stream.removeTrack(stream.getVideoTracks()[0]);
+        }
+        if (track.kind === 'audio' && stream.getAudioTracks()[0]) {
+          stream.getAudioTracks()[0].stop();
+          stream.removeTrack(stream.getAudioTracks()[0]);
+        }
+        stream.addTrack(track);
+      };
+    });
+
+    socketPublisher.subscribe('user-left-room', (msg) => {
+      const { [msg.source.id]: _, ...rest } = this.peers;
+      this.setPeers(rest);
+    });
+
+    this.createPeer = this.createPeer.bind(this);
+    // this.sendVideo = this.sendVideo.bind(this);
   }
 
   public reset() {
     for (const peer of Object.values(this.peers)) {
       peer.peerConnection.close();
     }
+
+    this.setPeers({});
   }
 
-  public createPeerConnection(remoteUserId: string) {
+  private createPeer(remoteUserId: string) {
     if (this.peers[remoteUserId]) {
       console.warn(`peer connection with ${remoteUserId} already exists!`);
-      return this.peers[remoteUserId].peerConnection;
+      return this.peers[remoteUserId];
     }
     console.log('Creating PeerConnection with user ' + remoteUserId);
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     });
-    // save reference to peer connection
-    this.peers[remoteUserId] = { peerConnection: pc };
+
+    const peer = { peerConnection: pc, stream: new MediaStream() };
+
+    this.setPeers({
+      ...this.peers,
+      [remoteUserId]: peer,
+    });
 
     // first three of these event handlers are required
     pc.onicecandidate = (event) =>
@@ -67,12 +103,7 @@ export class PeerConnectionManager {
     };
     // myPeerConnection.onicegatheringstatechange = handleICEGatheringStateChangeEvent;
     // myPeerConnection.onsignalingstatechange = () => handleSignalingStateChangeEvent(myPeerConnection);
-    return pc;
-  }
-
-  public getPeerConnection(remoteUserId: string) {
-    console.log(this.peers);
-    return this.peers[remoteUserId].peerConnection;
+    return peer;
   }
 
   // called by RTCPeerConnection when new ICE candidate is found for our network
@@ -82,7 +113,7 @@ export class PeerConnectionManager {
   ) {
     if (event.candidate) {
       // let others know of our candidate
-      this.sendToServer({
+      this.socketConnection.sendToServer({
         type: 'new-ice-candidate',
         target: remoteUserId,
         candidate: event.candidate,
@@ -109,7 +140,7 @@ export class PeerConnectionManager {
         return pc.setLocalDescription(offer);
       })
       .then(() => {
-        this.sendToServer({
+        this.socketConnection.sendToServer({
           type: 'media-offer',
           target: remoteUserId,
           sdp: pc.localDescription!,
@@ -120,13 +151,9 @@ export class PeerConnectionManager {
 
   private handleMediaOffer(msg: MessagesToClient['media-offer']) {
     const sourceId = msg.source.id;
-    let peer = this.peers[sourceId];
-    if (!peer) {
-      this.peers[sourceId] = {
-        peerConnection: this.createPeerConnection(sourceId),
-      };
-    }
-    const pc = this.peers[sourceId].peerConnection;
+
+    const pc =
+      this.peers[sourceId]?.peerConnection ?? this.createPeer(sourceId);
 
     pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
       .then(() => {
@@ -136,7 +163,7 @@ export class PeerConnectionManager {
         return pc.setLocalDescription(answer);
       })
       .then(() => {
-        this.sendToServer({
+        this.socketConnection.sendToServer({
           type: 'media-answer',
           target: sourceId,
           sdp: pc.localDescription!, // I think it's safe to do ! here because of setLocalDescription
@@ -155,22 +182,45 @@ export class PeerConnectionManager {
     );
   }
 
-  public sendVideo(videoTrack: MediaStreamTrack) {
-    for (const peer of Object.values(this.peers)) {
-      if (peer.videoSender) {
-        // Don't await this promise
-        peer.videoSender.replaceTrack(videoTrack);
-      } else {
-        peer.videoSender = peer.peerConnection.addTrack(videoTrack);
-      }
-    }
-  }
+  // public sendVideo() {
+  //   const stream = this.streamManager.getLocalCameraStream();
+  //   if (!stream) {
+  //     return;
+  //   }
+
+  //   const videoTrack = stream.getVideoTracks()[0];
+
+  //   for (const peer of Object.values(this.peers)) {
+  //     if (peer.videoSender) {
+  //       // Don't await this promise
+  //       peer.videoSender.replaceTrack(videoTrack);
+  //     } else {
+  //       peer.videoSender = peer.peerConnection.addTrack(videoTrack);
+  //     }
+  //   }
+  // }
 
   private handleError = (e: any) => {
     console.error(e);
   };
-
-  public removePeerConnection(remoteUserId: string) {
-    delete this.peers[remoteUserId];
-  }
 }
+
+// let instance: PeerConnectionManager;
+
+// export const initPeerConnectionManager = (
+//   socketConnection: SocketConnection,
+//   streamManager: StreamManager,
+//   peers: Peers,
+//   setPeers: (peers: Peers) => void
+// ) => {
+//   if (!instance) {
+//     instance = new PeerConnectionManager(
+//       socketConnection,
+//       streamManager,
+//       peers,
+//       setPeers
+//     );
+//   }
+
+//   return instance;
+// };
