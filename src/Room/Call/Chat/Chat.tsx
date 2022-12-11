@@ -7,6 +7,7 @@ import { ReactComponent as RightArrow } from './right-arrow.svg';
 import { useSocket } from '../SocketConnection/SocketConnection';
 
 type ChatMessage = {
+  timestamp: Date;
   from: string;
   text: string;
 };
@@ -14,7 +15,7 @@ type ChatMessage = {
 const getMessageElement = (msg: ChatMessage, i: number) => {
   return (
     <div className={styles.message} key={`chatMessage_${i}`}>
-      {msg.from}: {msg.text}
+      {msg.from}: {msg.text} ({msg.timestamp.toLocaleTimeString()})
     </div>
   );
 };
@@ -25,8 +26,12 @@ export const Chat = () => {
 
   const { socketConnection } = useSocket();
 
-  const addChatMessage = (chatMessage: ChatMessage) => {
-    setMessages((currentMessages) => [...currentMessages, chatMessage]);
+  const addChatMessage = (chatMessage: Omit<ChatMessage, 'timestamp'>) => {
+    const msgWithTimestamp = {
+      ...chatMessage,
+      timestamp: new Date(),
+    };
+    setMessages((currentMessages) => [...currentMessages, msgWithTimestamp]);
   };
 
   useEffect(() => {
@@ -68,7 +73,7 @@ export const Chat = () => {
       from: socketConnection.getLocalUserName() || 'me',
       text,
     };
-    setMessages((currentMessages) => [...currentMessages, chatMessage]);
+    addChatMessage(chatMessage);
   };
 
   return <ChatWindow messages={messages} onSend={onSend} />;
@@ -88,6 +93,13 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
     showFullChat || messages.length <= 3
       ? messages
       : messages.slice(messages.length - 3, messages.length);
+
+  const handleSendMessage = () => {
+    if (chatMessage.length > 0) {
+      onSend(chatMessage);
+      setChatMessage('');
+    }
+  };
 
   return (
     <div className={styles.chatContainer}>
@@ -117,14 +129,18 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
           className={styles.chatInput}
           onChange={targetValueSetter(setChatMessage)}
           value={chatMessage}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              handleSendMessage();
+              // Prevent the text area inserting a newline
+              event.preventDefault();
+            }
+          }}
         />
         <RightArrow
           className={styles.rightArrow}
           onClick={() => {
-            if (chatMessage.length > 0) {
-              onSend(chatMessage);
-              setChatMessage('');
-            }
+            handleSendMessage();
           }}
         />
       </div>

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { useStreams } from '../MediaStreams/CameraStream';
+import { useStreams } from '../MediaStreams/StreamProvider';
 import { SendToServer, useSocket } from '../SocketConnection/SocketConnection';
 import { MessagesToClient } from '../SocketConnection/SocketTypes';
 
@@ -8,6 +8,7 @@ export interface Peers {
     peerConnection: RTCPeerConnection;
     stream: MediaStream;
     videoSender?: RTCRtpSender;
+    audioSender?: RTCRtpSender;
   };
 }
 
@@ -33,8 +34,12 @@ type WithMessage<T extends keyof MessagesToClient> = {
   msg: MessagesToClient[T];
 };
 
-type WithStream = {
+type WithCameraStream = {
   localCameraStream: MediaStream | null;
+};
+
+type WithMicrophoneStream = {
+  localMicrophoneStream: MediaStream | null;
 };
 
 export interface IPeersContext {
@@ -46,7 +51,7 @@ const PeersContext = createContext<IPeersContext | null>(null);
 export const PeersProvider: React.FC = ({ children }) => {
   const [peers, setPeers] = useState<IPeersContext['peers']>({});
   const { socketConnection } = useSocket();
-  const { localCameraStream } = useStreams();
+  const { localCameraStream, localMicrophoneStream } = useStreams();
 
   // Subscribe to socket messages with the appropriate handlers.
   // Unsubscribe and resubscribe when the useEffect content is re-evaluated.
@@ -58,8 +63,6 @@ export const PeersProvider: React.FC = ({ children }) => {
       setPeers,
       sendToServer: socketConnection.sendToServer,
     };
-
-    subsRef.current.forEach((id) => socketPublisher.unsubscribe(id));
 
     subsRef.current = [
       socketPublisher.subscribe('media-offer', (msg) =>
@@ -88,7 +91,10 @@ export const PeersProvider: React.FC = ({ children }) => {
     if (localCameraStream) {
       sendVideo({ localCameraStream, peers });
     }
-  }, [localCameraStream, peers]);
+    if (localMicrophoneStream) {
+      sendAudio({ localMicrophoneStream, peers });
+    }
+  }, [localCameraStream, localMicrophoneStream, peers]);
 
   const value = {
     peers,
@@ -241,13 +247,12 @@ const handleNewICECandidateMsg = (
   }
 };
 
-const sendVideo = (args: WithStream & WithPeers) => {
+const sendVideo = (args: WithCameraStream & WithPeers) => {
   const { localCameraStream, peers } = args;
 
   const stream = localCameraStream;
 
   if (!stream) {
-    console.log('no stream to send');
     return;
   }
 
@@ -261,6 +266,24 @@ const sendVideo = (args: WithStream & WithPeers) => {
       peer.videoSender.replaceTrack(videoTrack);
     } else {
       peer.videoSender = peer.peerConnection.addTrack(videoTrack);
+    }
+  }
+};
+
+const sendAudio = (args: WithMicrophoneStream & WithPeers) => {
+  const { localMicrophoneStream: stream, peers } = args;
+
+  if (!stream) {
+    return;
+  }
+
+  const audioTrack = stream.getAudioTracks()[0];
+
+  for (const peer of Object.values(peers)) {
+    if (peer.audioSender) {
+      peer.audioSender.replaceTrack(audioTrack);
+    } else {
+      peer.audioSender = peer.peerConnection.addTrack(audioTrack);
     }
   }
 };
@@ -286,11 +309,15 @@ const handleUserJoinedRoom = (
     console.log('ontrack');
     const track = event.track;
 
+    console.log(track);
+
     if (track.kind === 'video' && stream.getVideoTracks()[0]) {
+      console.log('replacing video track');
       stream.getVideoTracks()[0].stop();
       stream.removeTrack(stream.getVideoTracks()[0]);
     }
     if (track.kind === 'audio' && stream.getAudioTracks()[0]) {
+      console.log('replacing audio track');
       stream.getAudioTracks()[0].stop();
       stream.removeTrack(stream.getAudioTracks()[0]);
     }

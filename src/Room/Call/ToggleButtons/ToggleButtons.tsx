@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStreams } from '../MediaStreams/CameraStream';
+import { useStreams } from '../MediaStreams/StreamProvider';
 import styles from './ToggleButtons.module.scss';
 
 type ToggleButton = {
@@ -9,13 +9,17 @@ type ToggleButton = {
 };
 
 export const ToggleButtons = (props: { roomId: string }) => {
-  const { toggleCamera } = useStreams();
+  const { toggleLocalCamera, toggleLocalMicrophone } = useStreams();
   const navigate = useNavigate();
 
   const toggleButtons: ToggleButton[] = [
     {
       content: 'Camera',
-      onClick: toggleCamera,
+      onClick: toggleLocalCamera,
+    },
+    {
+      content: 'Mic',
+      onClick: toggleLocalMicrophone,
     },
     {
       content: 'Exit',

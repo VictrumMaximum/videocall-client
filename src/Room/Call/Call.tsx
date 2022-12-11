@@ -6,8 +6,8 @@ import { ToggleButtons } from './ToggleButtons/ToggleButtons';
 import { RemoteVideos } from './RemoteVideos/RemoteVideos';
 import { LocalVideo } from './LocalVideo/LocalVideo';
 import { SocketProvider } from './SocketConnection/SocketConnection';
-import { StreamProvider } from './MediaStreams/CameraStream';
 import { PeersProvider } from './PeerConnection/PeerContext';
+import { StreamProvider } from './MediaStreams/StreamProvider';
 
 type CallProps = {
   roomId: string;
