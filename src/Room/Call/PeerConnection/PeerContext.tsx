@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useStreams } from '../MediaStreams/StreamProvider';
 import { SendToServer, useSocket } from '../SocketConnection/SocketConnection';
-import { MessagesToClient } from '../SocketConnection/SocketTypes';
+import { MessagesToClient, SocketUser } from '../SocketConnection/SocketTypes';
 
 export interface Peers {
   [remoteUserId: string]: {
+    user: SocketUser;
     peerConnection: RTCPeerConnection;
     stream: MediaStream;
     videoSender?: RTCRtpSender;
@@ -13,33 +14,18 @@ export interface Peers {
 }
 
 type SetPeers = (peers: Peers) => void;
+type WithPeers = { peers: Peers };
+type WithSetPeers = { setPeers: SetPeers };
 
-type WithPeers = {
-  peers: Peers;
-};
+type WithSendToServer = { sendToServer: SendToServer };
 
-type WithSetPeers = {
-  setPeers: SetPeers;
-};
+type WithUserId = { remoteUserId: string };
+type WithUser = { user: SocketUser };
 
-type WithSendToServer = {
-  sendToServer: SendToServer;
-};
-
-type WithUserId = {
-  remoteUserId: string;
-};
-
+type WithCameraStream = { localCameraStream: MediaStream | null };
+type WithMicrophoneStream = { localMicrophoneStream: MediaStream | null };
 type WithMessage<T extends keyof MessagesToClient> = {
   msg: MessagesToClient[T];
-};
-
-type WithCameraStream = {
-  localCameraStream: MediaStream | null;
-};
-
-type WithMicrophoneStream = {
-  localMicrophoneStream: MediaStream | null;
 };
 
 export interface IPeersContext {
@@ -101,11 +87,20 @@ export const PeersProvider: React.FC = ({ children }) => {
     sendVideo,
   };
 
+  const unmountingRef = useRef(false);
   useEffect(
     () => () => {
-      Object.values(peers).forEach((peer) => {
-        peer.peerConnection.close();
-      });
+      unmountingRef.current = true;
+    },
+    []
+  );
+  useEffect(
+    () => () => {
+      if (unmountingRef.current) {
+        Object.values(peers).forEach((peer) => {
+          peer.peerConnection.close();
+        });
+      }
     },
     [peers]
   );
@@ -166,9 +161,12 @@ const handleNegotiationNeededEvent = async (
 };
 
 const createPeer = (
-  args: WithPeers & WithSetPeers & WithUserId & WithSendToServer
+  args: WithUser & WithPeers & WithSetPeers & WithSendToServer
 ) => {
-  const { peers, setPeers, sendToServer, remoteUserId } = args;
+  console.log('Creating peer');
+  const { user, peers, setPeers, sendToServer } = args;
+
+  const remoteUserId = user.id;
 
   if (peers[remoteUserId]) {
     console.warn(`peer connection with ${remoteUserId} already exists!`);
@@ -179,7 +177,11 @@ const createPeer = (
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
   });
 
-  const peer = { peerConnection: pc, stream: new MediaStream() };
+  const peer = {
+    peerConnection: pc,
+    stream: new MediaStream(),
+    user,
+  };
 
   setPeers({
     ...peers,
@@ -199,17 +201,15 @@ const createPeer = (
 };
 
 const handleMediaOffer = async (
-  args: WithMessage<'media-offer'> & WithPeers & WithSetPeers & WithSendToServer
+  args: WithMessage<'media-offer'> & WithPeers & WithSendToServer
 ) => {
-  const { msg, peers, setPeers, sendToServer } = args;
+  const { msg, peers, sendToServer } = args;
 
   try {
-    const sourceId = msg.source.id;
+    const source = msg.source;
+    const sourceId = source.id;
 
-    const pc =
-      peers[sourceId]?.peerConnection ??
-      createPeer({ remoteUserId: sourceId, peers, setPeers, sendToServer })
-        .peerConnection;
+    const pc = peers[sourceId].peerConnection;
 
     await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
     const answer = await pc.createAnswer();
@@ -297,19 +297,18 @@ const handleUserJoinedRoom = (
   const { msg, peers, setPeers, sendToServer } = args;
   console.log('handleUserJoinedRoom');
 
+  const source = msg.source;
+
   const peer = createPeer({
-    remoteUserId: msg.source.id,
+    user: source,
     peers,
     setPeers,
     sendToServer,
   });
-  const stream = peer.stream;
 
   peer.peerConnection.ontrack = (event: RTCTrackEvent) => {
-    console.log('ontrack');
+    const stream = peer.stream;
     const track = event.track;
-
-    console.log(track);
 
     if (track.kind === 'video' && stream.getVideoTracks()[0]) {
       console.log('replacing video track');
@@ -321,6 +320,10 @@ const handleUserJoinedRoom = (
       stream.getAudioTracks()[0].stop();
       stream.removeTrack(stream.getAudioTracks()[0]);
     }
+    console.log('addtrack');
+    stream.onaddtrack = () => {
+      console.log('hello addtrack peers');
+    };
     stream.addTrack(track);
   };
 };

@@ -10,7 +10,7 @@ export const RemoteVideos = () => {
   return (
     <div className={styles.container}>
       {Object.entries(peers).map(([userId, state]) => {
-        return <RemoteVideo key={userId} userId={userId} {...state} />;
+        return <RemoteVideo key={userId} {...state} />;
       })}
     </div>
   );
