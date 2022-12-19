@@ -1,51 +1,31 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 
-import { SocketUser } from '../SocketConnection/SocketTypes';
+import { SocketUser } from "../SocketConnection/SocketTypes";
 
-import styles from './RemoteVideos.module.scss';
+import styles from "./RemoteVideos.module.scss";
 
 interface Props {
   stream: MediaStream;
   user: SocketUser;
   nickname?: string;
+  hasVideoTrack: boolean;
 }
 
-export const RemoteVideo = ({ user, stream }: Props) => {
-  const [hasVideoTrack, setHasVideoTrack] = useState(false);
+export const RemoteVideo = ({ user, stream, hasVideoTrack }: Props) => {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    console.log("stream has changed in RemoteVideo1");
     if (ref.current) {
       ref.current.srcObject = stream;
     }
-  }, [stream]);
+  }, [stream, hasVideoTrack]);
 
-  useEffect(() => {
-    console.log('setting callbacks');
+  if (stream.getVideoTracks().length === 0) {
+    return <PlaceHolder user={user} />;
+  }
 
-    stream.addEventListener('addtrack', () => {
-      console.log('hello addtrack');
-    });
-
-    stream.onaddtrack = (event) => {
-      console.log('onaddtrack');
-      if (event.track.kind === 'video') {
-        setHasVideoTrack(true);
-      }
-    };
-
-    stream.onremovetrack = (event) => {
-      if (event.track.kind === 'video') {
-        setHasVideoTrack(false);
-      }
-    };
-  }, []);
-
-  // if (!hasVideoTrack) {
-  //   return <PlaceHolder user={user} />;
-  // }
-
-  return <video width={'100%'} id={user.id} ref={ref} autoPlay></video>;
+  return <video width={"100%"} id={user.id} ref={ref} autoPlay></video>;
 };
 
 interface PlaceHolderProps {
