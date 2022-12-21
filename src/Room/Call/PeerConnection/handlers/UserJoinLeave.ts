@@ -64,25 +64,24 @@ export const handleUserJoinedRoom = (
     handleNegotiationNeededEvent({ pc, remoteUserId, sendToServer });
   };
 
-  const setStream = (peer: Peer, stream: MediaStream) => {
-    setPeers({
-      ...peers,
-      [peer.user.id]: {
-        ...peer,
+  const setStream = (userId: string, stream: MediaStream) => {
+    setPeers((oldPeers) => ({
+      ...oldPeers,
+      [userId]: {
+        ...oldPeers[userId],
         streams: {
-          ...peer.streams,
-          [peer.streamContentMap[stream.id]]: stream,
+          ...oldPeers[userId].streams,
+          [oldPeers[userId].streamContentMap[stream.id]]: stream,
         },
       },
-    });
+    }));
   };
 
   pc.ontrack = (event: RTCTrackEvent) => {
     const [stream] = event.streams;
 
     console.log("ontrack setstream");
-    console.log(stream);
-    setStream(peer, stream);
+    setStream(peer.user.id, stream);
   };
 
   return peer;

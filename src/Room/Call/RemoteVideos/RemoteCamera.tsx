@@ -10,11 +10,12 @@ interface Props {
   nickname?: string;
 }
 
-export const RemoteVideo = ({ user, stream }: Props) => {
+export const RemoteCamera = ({ user, stream }: Props) => {
   const ref = useRef<HTMLVideoElement>(null);
 
+  console.log("remotecamera");
+
   useEffect(() => {
-    console.log("stream has changed in RemoteVideo1");
     if (ref.current) {
       ref.current.srcObject = stream;
     }
@@ -24,7 +25,14 @@ export const RemoteVideo = ({ user, stream }: Props) => {
     return <PlaceHolder user={user} />;
   }
 
-  return <video width={"100%"} id={user.id} ref={ref} autoPlay></video>;
+  return (
+    <video
+      className={styles.remoteVideo}
+      id={user.id}
+      ref={ref}
+      autoPlay
+    ></video>
+  );
 };
 
 interface PlaceHolderProps {

@@ -18,8 +18,6 @@ export const handleNegotiationNeededEvent = async (
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    console.log(pc.localDescription?.sdp);
-
     sendToServer({
       type: "media-offer",
       target: remoteUserId,

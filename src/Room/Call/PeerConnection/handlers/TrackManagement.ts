@@ -43,13 +43,15 @@ export const manageTrack = (args: ManageTrackArgs) => {
 
     const sender = peer.senders[senderType];
 
-    if (!sender || !sender.track) {
+    if (!sender) {
+      console.log(`adding track for ${senderType}`);
       // This triggers negotiation.
       peer.senders[senderType] = peer.peerConnection.addTrack(track, stream);
     } else {
       // If there is already a track defined, replace it.
       // This may or may not trigger negotiation.
       // https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpSender/replaceTrack
+      console.log(`replacing track for ${senderType}`);
       sender.replaceTrack(track); // Don't await this promise
     }
   };

@@ -1,13 +1,13 @@
-import React from 'react';
+import React from "react";
 
-import styles from './Call.module.scss';
-import { Chat } from './Chat/Chat';
-import { ToggleButtons } from './ToggleButtons/ToggleButtons';
-import { RemoteVideos } from './RemoteVideos/RemoteVideos';
-import { LocalVideo } from './LocalVideo/LocalVideo';
-import { SocketProvider } from './SocketConnection/SocketConnection';
-import { PeersProvider } from './PeerConnection/PeerContext';
-import { StreamProvider } from './MediaStreams/StreamProvider';
+import styles from "./Call.module.scss";
+import { Chat } from "./Chat/Chat";
+import { ToggleButtons } from "./ToggleButtons/ToggleButtons";
+import { RemoteVideos } from "./RemoteVideos/RemoteVideos";
+import { LocalVideo } from "./LocalVideo/LocalVideo";
+import { SocketProvider } from "./SocketConnection/SocketConnection";
+import { PeersProvider } from "./PeerConnection/PeerContext";
+import { StreamProvider } from "./MediaStreams/StreamProvider";
 
 type CallProps = {
   roomId: string;
@@ -26,9 +26,9 @@ export const Call = (props: CallProps) => {
             {<LocalVideo />}
             <RemoteVideos />
             <ToggleButtons roomId={roomId} />
-            <div className={styles.bottomBar}>
-              <Chat />
-            </div>
+            {/* <div className={styles.bottomBar}> */}
+            <Chat />
+            {/* </div> */}
           </div>
         </PeersProvider>
       </StreamProvider>
