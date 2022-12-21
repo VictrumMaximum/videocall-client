@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 export const useGenericStream = (getStream: () => Promise<MediaStream>) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -22,7 +22,7 @@ export const useGenericStream = (getStream: () => Promise<MediaStream>) => {
       const cameraStream = await getStream();
       setStream(cameraStream);
     } catch (e) {
-      console.error('Error while creating stream:');
+      console.error("Error while creating stream:");
       console.error(e);
     }
   };

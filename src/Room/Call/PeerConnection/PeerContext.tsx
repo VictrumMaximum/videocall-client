@@ -49,7 +49,9 @@ const PeersContext = createContext<IPeersContext | null>(null);
 export const PeersProvider: React.FC = ({ children }) => {
   const [peers, setPeers] = useState<IPeersContext["peers"]>({});
   const { socketConnection } = useSocket();
-  const { localCameraStream, localMicrophoneStream } = useStreams();
+  const { userDevices } = useStreams();
+
+  const userStream = userDevices.stream;
 
   // Subscribe to socket messages with the appropriate handlers.
   // Unsubscribe and resubscribe when the useEffect dependencies are updated.
@@ -86,20 +88,8 @@ export const PeersProvider: React.FC = ({ children }) => {
   }, [socketConnection, peers]);
 
   useEffect(() => {
-    if (localCameraStream) {
-      manageVideo({ localCameraStream, peers });
-    }
-    if (localMicrophoneStream) {
-      manageAudio({ localMicrophoneStream, peers });
-    }
-  }, [localCameraStream, localMicrophoneStream, peers]);
-
-  useEffect(() => {
-    manageVideo({ localCameraStream, peers });
-  }, [localCameraStream, peers]);
-  useEffect(() => {
-    manageAudio({ localMicrophoneStream, peers });
-  }, [localMicrophoneStream, peers]);
+    manageVideo({ localCameraStream: userStream, peers });
+  }, [userStream, peers]);
 
   const unmountingRef = useRef(false);
   useEffect(

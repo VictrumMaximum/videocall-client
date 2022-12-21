@@ -1,10 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { useStreams } from '../MediaStreams/StreamProvider';
-import styles from './LocalVideo.module.scss';
+import React, { useEffect, useRef } from "react";
+import { useStreams } from "../MediaStreams/StreamProvider";
+import styles from "./LocalVideo.module.scss";
 
 export const LocalVideo = () => {
-  const { localCameraStream: stream } = useStreams();
+  const { userDevices } = useStreams();
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const stream = userDevices.stream;
 
   useEffect(() => {
     if (videoRef.current) {

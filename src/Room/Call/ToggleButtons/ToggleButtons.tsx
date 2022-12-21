@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useStreams } from '../MediaStreams/StreamProvider';
-import styles from './ToggleButtons.module.scss';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useStreams } from "../MediaStreams/StreamProvider";
+import styles from "./ToggleButtons.module.scss";
 
 type ToggleButton = {
   content: string;
@@ -9,20 +9,20 @@ type ToggleButton = {
 };
 
 export const ToggleButtons = (props: { roomId: string }) => {
-  const { toggleLocalCamera, toggleLocalMicrophone } = useStreams();
   const navigate = useNavigate();
+  const { userDevices } = useStreams();
 
   const toggleButtons: ToggleButton[] = [
     {
-      content: 'Camera',
-      onClick: toggleLocalCamera,
+      content: "Camera",
+      onClick: userDevices.toggleCamera,
     },
     {
-      content: 'Mic',
-      onClick: toggleLocalMicrophone,
+      content: "Mic",
+      onClick: userDevices.toggleMic,
     },
     {
-      content: 'Exit',
+      content: "Exit",
       onClick: () => {
         navigate(`/videocall/${props.roomId}`);
       },
@@ -60,8 +60,8 @@ const RoundButton = (props: RoundButtonProps) => {
     });
   };
 
-  const activeClass = !loading && enabled ? styles.activeButton : '';
-  const loadingClass = loading ? styles.loadingButton : '';
+  const activeClass = !loading && enabled ? styles.activeButton : "";
+  const loadingClass = loading ? styles.loadingButton : "";
 
   return (
     <div
