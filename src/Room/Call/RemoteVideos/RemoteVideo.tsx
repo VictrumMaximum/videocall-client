@@ -5,13 +5,12 @@ import { SocketUser } from "../SocketConnection/SocketTypes";
 import styles from "./RemoteVideos.module.scss";
 
 interface Props {
-  stream: MediaStream;
+  stream: MediaStream | null;
   user: SocketUser;
   nickname?: string;
-  hasVideoTrack: boolean;
 }
 
-export const RemoteVideo = ({ user, stream, hasVideoTrack }: Props) => {
+export const RemoteVideo = ({ user, stream }: Props) => {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -19,9 +18,9 @@ export const RemoteVideo = ({ user, stream, hasVideoTrack }: Props) => {
     if (ref.current) {
       ref.current.srcObject = stream;
     }
-  }, [stream, hasVideoTrack]);
+  }, [stream]);
 
-  if (stream.getVideoTracks().length === 0) {
+  if (!stream || stream.getVideoTracks().length === 0) {
     return <PlaceHolder user={user} />;
   }
 

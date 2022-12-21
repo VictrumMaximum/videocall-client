@@ -4,6 +4,7 @@ import {
   WithSendToServer,
   WithUserId,
 } from "../PeerContext";
+import { streamContentMap } from "./TrackManagement";
 
 // called by RTCPeerconnection when a track is added or removed
 export const handleNegotiationNeededEvent = async (
@@ -17,10 +18,13 @@ export const handleNegotiationNeededEvent = async (
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
+    console.log(pc.localDescription?.sdp);
+
     sendToServer({
       type: "media-offer",
       target: remoteUserId,
       sdp: pc.localDescription!,
+      streamContentMap,
     });
   } catch (e) {
     handleError(e);
@@ -36,7 +40,10 @@ export const handleMediaOffer = async (
     const source = msg.source;
     const sourceId = source.id;
 
-    const pc = peers[sourceId].peerConnection;
+    const peer = peers[sourceId];
+
+    const pc = peer.peerConnection;
+    peer.streamContentMap = msg.streamContentMap;
 
     await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
     const answer = await pc.createAnswer();
@@ -46,6 +53,7 @@ export const handleMediaOffer = async (
       type: "media-answer",
       target: sourceId,
       sdp: pc.localDescription!, // I think it's safe to do ! here because of setLocalDescription
+      streamContentMap,
     });
   } catch (error) {
     console.log(msg.sdp.sdp); // Failed to set remote video description send parameters for m-section with mid='0'});
@@ -58,9 +66,11 @@ export const handleMediaAnswer = (
 ) => {
   const { msg, peers } = args;
 
-  peers[msg.source.id].peerConnection.setRemoteDescription(
-    new RTCSessionDescription(msg.sdp)
-  );
+  const peer = peers[msg.source.id];
+
+  peer.peerConnection.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+
+  peer.streamContentMap = msg.streamContentMap;
 };
 
 const handleError = (e: any) => {

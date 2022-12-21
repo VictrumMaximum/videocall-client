@@ -1,9 +1,19 @@
+import { StreamContentMap } from "../../SocketConnection/SocketTypes";
 import { Peer, WithPeers } from "../PeerContext";
 
 const streams = {
   user: new MediaStream(),
   screen: new MediaStream(),
 };
+
+export type StreamContent = keyof typeof streams;
+
+export const streamContentMap: StreamContentMap = Object.fromEntries(
+  Object.entries(streams).map(([content, stream]) => [
+    stream.id,
+    content as StreamContent,
+  ])
+);
 
 interface StreamInfo {
   stream: MediaStream;
@@ -29,18 +39,14 @@ export const manageTrack = (args: ManageTrackArgs) => {
     : null;
 
   const sendTrack = (streamInfo: StreamInfo) => (peer: Peer) => {
-    console.log("sendtrack");
     const { stream, track } = streamInfo;
 
     const sender = peer.senders[senderType];
 
     if (!sender || !sender.track) {
-      console.log(`${senderType} not found`);
-
       // This triggers negotiation.
       peer.senders[senderType] = peer.peerConnection.addTrack(track, stream);
     } else {
-      console.log(`${senderType} found`);
       // If there is already a track defined, replace it.
       // This may or may not trigger negotiation.
       // https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpSender/replaceTrack
@@ -49,11 +55,9 @@ export const manageTrack = (args: ManageTrackArgs) => {
   };
 
   const stopStrack = (peer: Peer) => {
-    console.log("stoptrack");
     const sender = peer.senders[senderType];
 
     if (sender) {
-      console.log(`${senderType} found`);
       // Stop transmitting but keep the sender alive.
       // This shouldn't trigger re-negotiation.
       sender.replaceTrack(null);

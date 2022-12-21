@@ -1,10 +1,14 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useStreams } from "../MediaStreams/StreamProvider";
 import { SendToServer, useSocket } from "../SocketConnection/SocketConnection";
-import { MessagesToClient, SocketUser } from "../SocketConnection/SocketTypes";
+import {
+  MessagesToClient,
+  SocketUser,
+  StreamContentMap,
+} from "../SocketConnection/SocketTypes";
 import { handleNewICECandidateMsg } from "./handlers/ICE";
 import { handleMediaAnswer, handleMediaOffer } from "./handlers/Negotiation";
-import { manageTrack } from "./handlers/TrackManagement";
+import { manageTrack, StreamContent } from "./handlers/TrackManagement";
 import {
   handleUserJoinedRoom,
   handleUserLeftRoom,
@@ -13,8 +17,10 @@ import {
 export interface Peer {
   user: SocketUser;
   peerConnection: RTCPeerConnection;
-  stream: MediaStream;
-  hasVideoTrack: boolean;
+  streamContentMap: StreamContentMap;
+  streams: {
+    [content in StreamContent]: MediaStream | null;
+  };
   senders: {
     camSender: RTCRtpSender | null;
     micSender: RTCRtpSender | null;

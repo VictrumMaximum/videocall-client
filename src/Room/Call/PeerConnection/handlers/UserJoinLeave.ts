@@ -34,11 +34,14 @@ export const handleUserJoinedRoom = (
   });
 
   // Create object to keep data about peer in one place.
-  const peer = {
+  const peer: Peer = {
     peerConnection: pc,
-    stream: new MediaStream(),
-    hasVideoTrack: false,
     user,
+    streams: {
+      screen: null,
+      user: null,
+    },
+    streamContentMap: {},
     senders: {
       camSender: null,
       micSender: null,
@@ -66,7 +69,10 @@ export const handleUserJoinedRoom = (
       ...peers,
       [peer.user.id]: {
         ...peer,
-        stream,
+        streams: {
+          ...peer.streams,
+          [peer.streamContentMap[stream.id]]: stream,
+        },
       },
     });
   };
