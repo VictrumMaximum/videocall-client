@@ -4,7 +4,7 @@ import { SendToServer, useSocket } from "../SocketConnection/SocketConnection";
 import { MessagesToClient, SocketUser } from "../SocketConnection/SocketTypes";
 import { handleNewICECandidateMsg } from "./handlers/ICE";
 import { handleMediaAnswer, handleMediaOffer } from "./handlers/Negotiation";
-import { manageAudio, manageVideo } from "./handlers/TrackManagement";
+import { manageTrack } from "./handlers/TrackManagement";
 import {
   handleUserJoinedRoom,
   handleUserLeftRoom,
@@ -15,8 +15,12 @@ export interface Peer {
   peerConnection: RTCPeerConnection;
   stream: MediaStream;
   hasVideoTrack: boolean;
-  videoSender?: RTCRtpSender;
-  audioSender?: RTCRtpSender;
+  senders: {
+    camSender: RTCRtpSender | null;
+    micSender: RTCRtpSender | null;
+    screenVideoSender: RTCRtpSender | null;
+    screenAudioSender: RTCRtpSender | null;
+  };
 }
 
 export interface Peers {
@@ -32,10 +36,8 @@ export type WithSendToServer = { sendToServer: SendToServer };
 export type WithUserId = { remoteUserId: string };
 export type WithUser = { user: SocketUser };
 
-export type WithCameraStream = { localCameraStream: MediaStream | null };
-export type WithMicrophoneStream = {
-  localMicrophoneStream: MediaStream | null;
-};
+export type WithStream = { stream: MediaStream };
+
 export type WithMessage<T extends keyof MessagesToClient> = {
   msg: MessagesToClient[T];
 };
@@ -49,9 +51,7 @@ const PeersContext = createContext<IPeersContext | null>(null);
 export const PeersProvider: React.FC = ({ children }) => {
   const [peers, setPeers] = useState<IPeersContext["peers"]>({});
   const { socketConnection } = useSocket();
-  const { userDevices } = useStreams();
-
-  const userStream = userDevices.stream;
+  const { camTrack, micTrack, screenVideoTrack } = useStreams();
 
   // Subscribe to socket messages with the appropriate handlers.
   // Unsubscribe and resubscribe when the useEffect dependencies are updated.
@@ -88,8 +88,31 @@ export const PeersProvider: React.FC = ({ children }) => {
   }, [socketConnection, peers]);
 
   useEffect(() => {
-    manageVideo({ localCameraStream: userStream, peers });
-  }, [userStream, peers]);
+    manageTrack({
+      streamLabel: "user",
+      track: camTrack,
+      senderType: "camSender",
+      peers,
+    });
+    manageTrack({
+      streamLabel: "user",
+      track: micTrack,
+      senderType: "micSender",
+      peers,
+    });
+    manageTrack({
+      streamLabel: "screen",
+      track: screenVideoTrack,
+      senderType: "screenVideoSender",
+      peers,
+    });
+    // manageTrack({
+    //   streamLabel: "user",
+    //   track: screenAudioTrack,
+    //   senderType: 'screenAudioSender',
+    //   peers,
+    // });
+  }, [camTrack, micTrack, screenVideoTrack, peers]);
 
   const unmountingRef = useRef(false);
   useEffect(

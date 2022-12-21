@@ -10,16 +10,20 @@ type ToggleButton = {
 
 export const ToggleButtons = (props: { roomId: string }) => {
   const navigate = useNavigate();
-  const { userDevices } = useStreams();
+  const { toggleCam, toggleMic, toggleScreenVideo } = useStreams();
 
   const toggleButtons: ToggleButton[] = [
     {
       content: "Camera",
-      onClick: userDevices.toggleCamera,
+      onClick: toggleCam,
     },
     {
       content: "Mic",
-      onClick: userDevices.toggleMic,
+      onClick: toggleMic,
+    },
+    {
+      content: "Screen",
+      onClick: toggleScreenVideo,
     },
     {
       content: "Exit",

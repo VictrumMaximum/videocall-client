@@ -1,26 +1,52 @@
-import React, { createContext, useContext } from "react";
-import { useUserDevices } from "./UserStreams";
+import React, { createContext, useContext, useMemo } from "react";
+import { useCamera } from "./CameraStream";
+import { useMicrophone } from "./MicrophoneStream";
+import { useScreenVideo } from "./ScreenStream";
 
 interface IStreamContext {
-  userDevices: {
-    stream: MediaStream | null;
-    mediaDevices: MediaDeviceInfo[];
-    toggleCamera: () => void;
-    toggleMic: () => void;
-    setCameraDeviceId: (deviceId: string) => void;
-    setMicDeviceId: (deviceId: string) => void;
-  };
+  camTrack: MediaStreamTrack | null;
+  micTrack: MediaStreamTrack | null;
+  screenVideoTrack: MediaStreamTrack | null;
+  mediaDevices: MediaDeviceInfo[];
+  toggleCam: () => void;
+  toggleMic: () => void;
+  toggleScreenVideo: () => void;
+  setCameraDeviceId: (deviceId: string) => void;
+  setMicDeviceId: (deviceId: string) => void;
 }
 
 const StreamContext = createContext<IStreamContext | null>(null);
 
 export const StreamProvider: React.FC = ({ children }) => {
-  const userDevices = useUserDevices();
+  const { track: camTrack, toggle: toggleCam } = useCamera();
+  const { track: micTrack, toggle: toggleMic } = useMicrophone();
+  const { track: screenVideoTrack, toggle: toggleScreenVideo } =
+    useScreenVideo();
+
+  const value: IStreamContext = useMemo(
+    () => ({
+      camTrack,
+      toggleCam,
+      setCameraDeviceId: () => {},
+      micTrack,
+      toggleMic,
+      setMicDeviceId: () => {},
+      screenVideoTrack,
+      toggleScreenVideo,
+      mediaDevices: [],
+    }),
+    [
+      camTrack,
+      micTrack,
+      screenVideoTrack,
+      toggleCam,
+      toggleMic,
+      toggleScreenVideo,
+    ]
+  );
 
   return (
-    <StreamContext.Provider value={{ userDevices }}>
-      {children}
-    </StreamContext.Provider>
+    <StreamContext.Provider value={value}>{children}</StreamContext.Provider>
   );
 };
 

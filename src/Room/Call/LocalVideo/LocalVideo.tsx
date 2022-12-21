@@ -1,20 +1,27 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useStreams } from "../MediaStreams/StreamProvider";
 import styles from "./LocalVideo.module.scss";
 
 export const LocalVideo = () => {
-  const { userDevices } = useStreams();
+  const { camTrack: track } = useStreams();
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  const stream = userDevices.stream;
+  const stream = useMemo(() => new MediaStream(), []);
 
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
     }
-  }, [stream]);
+  }, [stream, track]);
 
-  if (!stream) {
+  useEffect(() => {
+    if (track) {
+      stream.addTrack(track);
+    } else {
+      stream.getTracks().forEach((t) => stream.removeTrack(t));
+    }
+  }, [track, stream]);
+
+  if (!track) {
     return null;
   }
 

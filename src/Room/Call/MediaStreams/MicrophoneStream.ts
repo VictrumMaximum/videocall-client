@@ -1,21 +1,19 @@
-import { useGenericStream } from './GenericStream';
+import { useGenericTrack } from "./GenericStream";
 
 const getMicrophoneStream = () => {
   return navigator.mediaDevices.getUserMedia({
     audio: true,
-    video: {
-      facingMode: 'user',
-    },
   });
 };
 
-export const useMicrophoneStream = () => {
-  const { stream, toggleStream, stopStream } =
-    useGenericStream(getMicrophoneStream);
+export const useMicrophone = () => {
+  return useGenericTrack(getMicrophoneStream, "audio");
 
-  return {
-    localMicrophoneStream: stream,
-    toggleLocalMicrophone: toggleStream,
-    stopLocalMicrophone: stopStream,
-  };
+  // const track = stream?.getAudioTracks()[0] ?? null;
+
+  // return {
+  //   track,
+  //   toggle: toggleStream,
+  //   stop: stopStream,
+  // };
 };

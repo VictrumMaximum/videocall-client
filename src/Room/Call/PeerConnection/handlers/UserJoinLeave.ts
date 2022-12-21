@@ -6,7 +6,6 @@ import {
   WithPeers,
   WithSendToServer,
   WithSetPeers,
-  WithUser,
 } from "../PeerContext";
 
 export const handleUserJoinedRoom = (
@@ -40,6 +39,12 @@ export const handleUserJoinedRoom = (
     stream: new MediaStream(),
     hasVideoTrack: false,
     user,
+    senders: {
+      camSender: null,
+      micSender: null,
+      screenVideoSender: null,
+      screenAudioSender: null,
+    },
   };
 
   // Add peer to state.
@@ -67,19 +72,8 @@ export const handleUserJoinedRoom = (
   };
 
   pc.ontrack = (event: RTCTrackEvent) => {
-    // const stream = peer.stream;
-    const track = event.track;
-    const stream = event.streams[0];
+    const [stream] = event.streams;
 
-    // if (track.kind === "video" && stream.getVideoTracks()[0]) {
-    //   stream.getVideoTracks()[0].stop();
-    //   stream.removeTrack(stream.getVideoTracks()[0]);
-    // }
-    // if (track.kind === "audio" && stream.getAudioTracks()[0]) {
-    //   stream.getAudioTracks()[0].stop();
-    //   stream.removeTrack(stream.getAudioTracks()[0]);
-    // }
-    // stream.addTrack(track);
     console.log("ontrack setstream");
     console.log(stream);
     setStream(peer, stream);

@@ -1,65 +1,70 @@
-import {
-  Peer,
-  WithCameraStream,
-  WithMicrophoneStream,
-  WithPeers,
-} from "../PeerContext";
+import { Peer, WithPeers } from "../PeerContext";
 
-export const manageVideo = (args: WithCameraStream & WithPeers) => {
-  const { localCameraStream, peers } = args;
+const streams = {
+  user: new MediaStream(),
+  screen: new MediaStream(),
+};
 
-  const stream = localCameraStream;
+interface StreamInfo {
+  stream: MediaStream;
+  track: MediaStreamTrack;
+}
 
-  const sendTrack = (stream: MediaStream) => (peer: Peer) => {
+type SenderType = keyof Peer["senders"];
+
+type ManageTrackArgs = {
+  track: MediaStreamTrack | null;
+  streamLabel: keyof typeof streams;
+  senderType: SenderType;
+} & WithPeers;
+
+export const manageTrack = (args: ManageTrackArgs) => {
+  const { streamLabel, track, senderType, peers } = args;
+
+  const streamInfo = track
+    ? {
+        stream: streams[streamLabel],
+        track,
+      }
+    : null;
+
+  const sendTrack = (streamInfo: StreamInfo) => (peer: Peer) => {
     console.log("sendtrack");
-    const videoTrack = stream.getVideoTracks()[0];
-    if (!peer.videoSender || !peer.videoSender.track) {
-      console.log("videosender not found");
+    const { stream, track } = streamInfo;
+
+    const sender = peer.senders[senderType];
+
+    if (!sender || !sender.track) {
+      console.log(`${senderType} not found`);
+
       // This triggers negotiation.
-      peer.videoSender = peer.peerConnection.addTrack(videoTrack, stream);
+      peer.senders[senderType] = peer.peerConnection.addTrack(track, stream);
     } else {
-      console.log("videosender found");
-      // If there is already a track defined, replace it (switching cameras).
-      // This doesn't trigger negotiation.
-      peer.videoSender.replaceTrack(videoTrack); // Don't await this promise
+      console.log(`${senderType} found`);
+      // If there is already a track defined, replace it.
+      // This may or may not trigger negotiation.
+      // https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpSender/replaceTrack
+      sender.replaceTrack(track); // Don't await this promise
     }
   };
 
   const stopStrack = (peer: Peer) => {
     console.log("stoptrack");
-    if (peer.videoSender) {
-      console.log("videosender found");
-      // This triggers negotiation.
-      peer.peerConnection.removeTrack(peer.videoSender);
-      peer.videoSender = undefined;
+    const sender = peer.senders[senderType];
+
+    if (sender) {
+      console.log(`${senderType} found`);
+      // Stop transmitting but keep the sender alive.
+      // This shouldn't trigger re-negotiation.
+      sender.replaceTrack(null);
     } else {
-      console.log("videosender not found");
-      // Camera stopped streaming but we already weren't sending anything to this peer.
-      // This should never happen, and even if it did, we don't need to do anything.
+      // Do nothing, since there is nothing to stop.
     }
   };
 
-  const fun = stream ? sendTrack(stream) : stopStrack;
+  const fun = streamInfo ? sendTrack(streamInfo) : stopStrack;
 
   for (const peer of Object.values(peers)) {
     fun(peer);
-  }
-};
-
-export const manageAudio = (args: WithMicrophoneStream & WithPeers) => {
-  const { localMicrophoneStream: stream, peers } = args;
-
-  if (!stream) {
-    return;
-  }
-
-  const audioTrack = stream.getAudioTracks()[0];
-
-  for (const peer of Object.values(peers)) {
-    if (peer.audioSender) {
-      peer.audioSender.replaceTrack(audioTrack);
-    } else {
-      peer.audioSender = peer.peerConnection.addTrack(audioTrack);
-    }
   }
 };
