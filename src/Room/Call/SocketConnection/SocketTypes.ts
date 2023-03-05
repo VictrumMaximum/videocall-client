@@ -1,3 +1,5 @@
+export type StreamType = "camera" | "screen";
+
 export type SocketUser = {
   id: string;
   name?: string;
@@ -7,10 +9,6 @@ export type SocketUser = {
 
 type WithSource = {
   source: SocketUser;
-};
-
-export type StreamContentMap = {
-  [streamId: string]: "user" | "screen";
 };
 
 export interface MessagesToClient {
@@ -26,6 +24,7 @@ export interface MessagesToClient {
   "new-ice-candidate": {
     type: "new-ice-candidate";
     candidate: RTCIceCandidate;
+    streamType: StreamType;
   } & WithSource;
   "user-left-room": {
     type: "user-left-room";
@@ -36,12 +35,12 @@ export interface MessagesToClient {
   "media-offer": {
     type: "media-offer";
     sdp: RTCSessionDescription;
-    streamContentMap: StreamContentMap;
+    streamType: StreamType;
   } & WithSource;
   "media-answer": {
     type: "media-answer";
     sdp: RTCSessionDescription;
-    streamContentMap: StreamContentMap;
+    streamType: StreamType;
   } & WithSource;
 }
 
@@ -73,16 +72,17 @@ export interface RelayMessages {
   "new-ice-candidate": {
     type: "new-ice-candidate";
     candidate: RTCIceCandidate;
+    streamType: StreamType;
   } & WithDestination;
   "media-offer": {
     type: "media-offer";
     sdp: RTCSessionDescription;
-    streamContentMap: StreamContentMap;
+    streamType: StreamType;
   } & WithDestination;
   "media-answer": {
     type: "media-answer";
     sdp: RTCSessionDescription;
-    streamContentMap: StreamContentMap;
+    streamType: StreamType;
   } & WithDestination;
 }
 

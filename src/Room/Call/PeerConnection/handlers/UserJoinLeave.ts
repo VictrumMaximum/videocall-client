@@ -1,12 +1,14 @@
 import { handleICECandidateEvent } from "./ICE";
 import { handleNegotiationNeededEvent } from "./Negotiation";
 import {
+  Connection,
   Peer,
   WithMessage,
   WithPeers,
   WithSendToServer,
   WithSetPeers,
 } from "../PeerContext";
+import { SocketUser, StreamType } from "../../SocketConnection/SocketTypes";
 
 export const handleUserJoinedRoom = (
   args: WithMessage<"user-joined-room"> &
@@ -27,28 +29,7 @@ export const handleUserJoinedRoom = (
     return peers[remoteUserId];
   }
 
-  // Create RTCPeerConnection
-  console.log("Creating PeerConnection with user " + remoteUserId);
-  const pc = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  });
-
-  // Create object to keep data about peer in one place.
-  const peer: Peer = {
-    peerConnection: pc,
-    user,
-    streams: {
-      screen: null,
-      user: null,
-    },
-    streamContentMap: {},
-    senders: {
-      camSender: null,
-      micSender: null,
-      screenVideoSender: null,
-      screenAudioSender: null,
-    },
-  };
+  const peer = createPeer(user);
 
   // Add peer to state.
   setPeers({
@@ -56,33 +37,50 @@ export const handleUserJoinedRoom = (
     [remoteUserId]: peer,
   });
 
-  // Set event handlers
-  pc.onicecandidate = (event) =>
-    handleICECandidateEvent({ event, remoteUserId, sendToServer });
+  Object.entries(peer.connections).forEach((entry) => {
+    const streamType = entry[0] as StreamType;
+    console.log(`creating callbacks for streamType: ${streamType}`);
+    const connection = entry[1] as Connection;
 
-  pc.onnegotiationneeded = () => {
-    handleNegotiationNeededEvent({ pc, remoteUserId, sendToServer });
-  };
+    const pc = connection.peerConnection;
 
-  const setStream = (userId: string, stream: MediaStream) => {
-    setPeers((oldPeers) => ({
-      ...oldPeers,
-      [userId]: {
-        ...oldPeers[userId],
-        streams: {
-          ...oldPeers[userId].streams,
-          [oldPeers[userId].streamContentMap[stream.id]]: stream,
+    // Set event handlers
+    pc.onicecandidate = (event) =>
+      handleICECandidateEvent({
+        event,
+        remoteUserId,
+        sendToServer,
+        streamType,
+      });
+
+    pc.onnegotiationneeded = () => {
+      handleNegotiationNeededEvent({
+        pc,
+        remoteUserId,
+        sendToServer,
+        streamType,
+      });
+    };
+
+    pc.ontrack = (event: RTCTrackEvent) => {
+      const [stream] = event.streams;
+      const userId = peer.user.id;
+
+      setPeers((oldPeers) => ({
+        ...oldPeers,
+        [userId]: {
+          ...oldPeers[userId],
+          connections: {
+            ...oldPeers[userId].connections,
+            [streamType]: {
+              ...oldPeers[userId].connections[streamType],
+              incomingStream: stream,
+            },
+          },
         },
-      },
-    }));
-  };
-
-  pc.ontrack = (event: RTCTrackEvent) => {
-    const [stream] = event.streams;
-
-    console.log("ontrack setstream");
-    setStream(peer.user.id, stream);
-  };
+      }));
+    };
+  });
 
   return peer;
 };
@@ -96,4 +94,39 @@ export const handleUserLeftRoom = (
 
   const { [userId]: _, ...rest } = peers;
   setPeers(rest);
+};
+
+const createPeer = (user: SocketUser): Peer => {
+  // Create RTCPeerConnection
+  console.log("Creating PeerConnection with user " + user);
+
+  const config = {
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  };
+
+  const pcCamera = new RTCPeerConnection(config);
+  const pcScreen = new RTCPeerConnection(config);
+
+  // Create object to keep data about peer in one place.
+  return {
+    user,
+    connections: {
+      camera: {
+        peerConnection: pcCamera,
+        incomingStream: null,
+        senders: {
+          video: null,
+          audio: null,
+        },
+      },
+      screen: {
+        peerConnection: pcScreen,
+        incomingStream: null,
+        senders: {
+          video: null,
+          audio: null,
+        },
+      },
+    },
+  };
 };

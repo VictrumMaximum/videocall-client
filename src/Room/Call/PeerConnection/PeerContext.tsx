@@ -4,35 +4,35 @@ import { SendToServer, useSocket } from "../SocketConnection/SocketConnection";
 import {
   MessagesToClient,
   SocketUser,
-  StreamContentMap,
+  StreamType,
 } from "../SocketConnection/SocketTypes";
 import { handleNewICECandidateMsg } from "./handlers/ICE";
 import { handleMediaAnswer, handleMediaOffer } from "./handlers/Negotiation";
-import { manageTrack, StreamContent } from "./handlers/TrackManagement";
+import { manageTrack } from "./handlers/TrackManagement";
 import {
   handleUserJoinedRoom,
   handleUserLeftRoom,
 } from "./handlers/UserJoinLeave";
 
-export interface Peer {
-  user: SocketUser;
-  peerConnection: RTCPeerConnection;
-  streamContentMap: StreamContentMap;
-  streams: {
-    [content in StreamContent]: MediaStream | null;
-  };
-  senders: {
-    camSender: RTCRtpSender | null;
-    micSender: RTCRtpSender | null;
-    screenVideoSender: RTCRtpSender | null;
-    screenAudioSender: RTCRtpSender | null;
-  };
-}
-
 export interface Peers {
   [remoteUserId: string]: Peer;
 }
 
+export interface Peer {
+  user: SocketUser;
+  connections: Record<StreamType, Connection>;
+}
+
+export interface Connection {
+  peerConnection: RTCPeerConnection;
+  incomingStream: MediaStream | null;
+  senders: {
+    video: RTCRtpSender | null;
+    audio: RTCRtpSender | null;
+  };
+}
+
+// ===== Event handlers parameter signature types =====
 export type SetPeers = React.Dispatch<React.SetStateAction<Peers>>;
 export type WithPeers = { peers: Peers };
 export type WithSetPeers = { setPeers: SetPeers };
@@ -48,11 +48,12 @@ export type WithMessage<T extends keyof MessagesToClient> = {
   msg: MessagesToClient[T];
 };
 
+export type WithStreamType = { streamType: StreamType };
+
 export interface IPeersContext {
   peers: Peer[];
 }
-
-const PeersContext = createContext<IPeersContext | null>(null);
+// ===== /Event handlers parameter signature types =====
 
 export const PeersProvider: React.FC = ({ children }) => {
   const [peers, setPeers] = useState<Peers>({});
@@ -93,32 +94,26 @@ export const PeersProvider: React.FC = ({ children }) => {
     };
   }, [socketConnection, peers]);
 
-  // Manage media streams
+  // Manage outgoing media tracks
   useEffect(() => {
     manageTrack({
-      streamLabel: "user",
+      streamType: "camera",
       track: camTrack,
-      senderType: "camSender",
+      senderType: "video",
       peers,
     });
     manageTrack({
-      streamLabel: "user",
+      streamType: "camera",
       track: micTrack,
-      senderType: "micSender",
+      senderType: "audio",
       peers,
     });
     manageTrack({
-      streamLabel: "screen",
+      streamType: "screen",
       track: screenVideoTrack,
-      senderType: "screenVideoSender",
+      senderType: "video",
       peers,
     });
-    // manageTrack({
-    //   streamLabel: "user",
-    //   track: screenAudioTrack,
-    //   senderType: 'screenAudioSender',
-    //   peers,
-    // });
   }, [camTrack, micTrack, screenVideoTrack, peers]);
 
   // =========== Unmounting stuff ======================
@@ -133,7 +128,9 @@ export const PeersProvider: React.FC = ({ children }) => {
     () => () => {
       if (unmountingRef.current) {
         Object.values(peers).forEach((peer) => {
-          peer.peerConnection.close();
+          Object.values(peer.connections).forEach((connection) => {
+            connection.peerConnection.close();
+          });
         });
       }
     },
@@ -147,6 +144,8 @@ export const PeersProvider: React.FC = ({ children }) => {
     </PeersContext.Provider>
   );
 };
+
+const PeersContext = createContext<IPeersContext | null>(null);
 
 export const usePeers = () => {
   const context = useContext(PeersContext);

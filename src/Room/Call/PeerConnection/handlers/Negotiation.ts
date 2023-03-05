@@ -2,15 +2,17 @@ import {
   WithMessage,
   WithPeers,
   WithSendToServer,
+  WithStreamType,
   WithUserId,
 } from "../PeerContext";
-import { streamContentMap } from "./TrackManagement";
 
 // called by RTCPeerconnection when a track is added or removed
 export const handleNegotiationNeededEvent = async (
-  args: { pc: RTCPeerConnection } & WithUserId & WithSendToServer
+  args: { pc: RTCPeerConnection } & WithUserId &
+    WithSendToServer &
+    WithStreamType
 ) => {
-  const { pc, remoteUserId, sendToServer } = args;
+  const { pc, remoteUserId, streamType, sendToServer } = args;
 
   console.log("handle negotiation");
 
@@ -22,7 +24,7 @@ export const handleNegotiationNeededEvent = async (
       type: "media-offer",
       target: remoteUserId,
       sdp: pc.localDescription!,
-      streamContentMap,
+      streamType,
     });
   } catch (e) {
     handleError(e);
@@ -39,9 +41,9 @@ export const handleMediaOffer = async (
     const sourceId = source.id;
 
     const peer = peers[sourceId];
+    const streamType = msg.streamType;
 
-    const pc = peer.peerConnection;
-    peer.streamContentMap = msg.streamContentMap;
+    const pc = peer.connections[streamType].peerConnection;
 
     await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
     const answer = await pc.createAnswer();
@@ -51,7 +53,7 @@ export const handleMediaOffer = async (
       type: "media-answer",
       target: sourceId,
       sdp: pc.localDescription!, // I think it's safe to do ! here because of setLocalDescription
-      streamContentMap,
+      streamType,
     });
   } catch (error) {
     console.log(msg.sdp.sdp); // Failed to set remote video description send parameters for m-section with mid='0'});
@@ -66,9 +68,11 @@ export const handleMediaAnswer = (
 
   const peer = peers[msg.source.id];
 
-  peer.peerConnection.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+  const streamType = msg.streamType;
 
-  peer.streamContentMap = msg.streamContentMap;
+  peer.connections[streamType].peerConnection.setRemoteDescription(
+    new RTCSessionDescription(msg.sdp)
+  );
 };
 
 const handleError = (e: any) => {

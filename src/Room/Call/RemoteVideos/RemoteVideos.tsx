@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { StreamContent } from "../PeerConnection/handlers/TrackManagement";
 import { Peer, usePeers } from "../PeerConnection/PeerContext";
-import { RemoteCamera } from "./RemoteCamera";
 
 import styles from "./RemoteVideos.module.scss";
 
@@ -12,23 +10,52 @@ type Streams = {
 
 export const RemoteVideos = () => {
   const { peers } = usePeers();
+
+  // NOTE: currently only displaying one peer.
+  const peer = peers.length > 0 ? peers[0] : null;
+
+  if (!peer) {
+    return <NoPeer />;
+  }
+
+  return <PeerVideo peer={peer} />;
+};
+
+type PeerVideoProps = {
+  peer: Peer;
+};
+
+const PeerVideo = (props: PeerVideoProps) => {
+  const { peer } = props;
+
   const [streams, setStreams] = useState<Streams>({
     mainStream: null,
     sideStream: null,
   });
 
-  // NOTE: currently only displaying one peer.
-  const peer = peers.length > 0 ? peers[0] : null;
+  const cameraStream = peer.connections.camera.incomingStream;
+  const screenStream = peer.connections.screen.incomingStream;
 
-  const userStream = peer?.streams.user || null;
-  const screenStream = peer?.streams.screen;
+  console.log("peerStreams");
+  console.log({
+    cameraStream,
+    screenStream,
+  });
+
+  console.log("stateStreams");
+  console.log(streams);
 
   useEffect(() => {
-    setStreams({
-      mainStream: screenStream ?? userStream,
-      sideStream: screenStream ? userStream : null,
+    console.log("setting streams");
+    console.log({
+      cameraStream,
+      screenStream,
     });
-  }, [userStream, screenStream]);
+    setStreams({
+      mainStream: screenStream ?? cameraStream,
+      sideStream: screenStream ? cameraStream : null,
+    });
+  }, [cameraStream, screenStream]);
 
   const userPlaceHolder = peer && (
     <div className={styles.userPlaceHolder}>
@@ -48,7 +75,9 @@ export const RemoteVideos = () => {
   );
 };
 
-const Content = () => {};
+const NoPeer = () => {
+  return null;
+};
 
 type VideoProps = {
   stream: MediaStream | null;

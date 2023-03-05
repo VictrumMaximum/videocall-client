@@ -9,11 +9,23 @@
 }
 
 .sideVideoContainer {
-  // TODO
-  display: none;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: fit-content;
 }
 
 .video {
   height: 100%;
   width: 100%;
+}
+
+.userPlaceHolder {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
