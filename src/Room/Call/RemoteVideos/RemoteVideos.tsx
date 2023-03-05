@@ -78,7 +78,7 @@ const PeerVideo = (props: PeerVideoProps) => {
 };
 
 const NoPeer = () => {
-  return null;
+  return <div className={styles.noPeerContainer}></div>;
 };
 
 type VideoProps = {

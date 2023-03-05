@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 import styles from "./Call.module.scss";
 import { Chat } from "./Chat/Chat";
@@ -17,6 +17,10 @@ type CallProps = {
 export const Call = (props: CallProps) => {
   const { roomId } = props;
 
+  const [showChat, setShowChat] = useState(false);
+
+  const toggleChat = () => setShowChat((x) => !x);
+
   return (
     <SocketProvider roomId={roomId}>
       <StreamProvider>
@@ -25,9 +29,9 @@ export const Call = (props: CallProps) => {
             {/* <div className={styles.topBar}></div> */}
             {<LocalVideo />}
             <RemoteVideos />
-            <ToggleButtons roomId={roomId} />
+            <ToggleButtons roomId={roomId} toggleChat={toggleChat} />
             {/* <div className={styles.bottomBar}> */}
-            <Chat />
+            <Chat visible={showChat} />
             {/* </div> */}
           </div>
         </PeersProvider>

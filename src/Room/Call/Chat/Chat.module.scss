@@ -3,6 +3,7 @@
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
+  max-height: 50%;
 }
 
 $chatHeight: 30px;
@@ -71,6 +72,7 @@ $chatHeight: 30px;
   overflow: hidden;
   margin-bottom: 5px;
   border-radius: 5px;
+  overflow-y: auto;
 }
 
 .message {

@@ -8,7 +8,12 @@ type ToggleButton = {
   onClick: () => void;
 };
 
-export const ToggleButtons = (props: { roomId: string }) => {
+type ToggleButtonsProps = {
+  roomId: string;
+  toggleChat: () => void;
+};
+
+export const ToggleButtons = (props: ToggleButtonsProps) => {
   const navigate = useNavigate();
   const { toggleCam, toggleMic, toggleScreenVideo } = useStreams();
 
@@ -24,6 +29,10 @@ export const ToggleButtons = (props: { roomId: string }) => {
     {
       content: "Screen",
       onClick: toggleScreenVideo,
+    },
+    {
+      content: "Chat",
+      onClick: () => props.toggleChat(),
     },
     {
       content: "Exit",

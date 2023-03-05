@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import TextareaAutosize from 'react-textarea-autosize';
+import React, { useEffect, useState } from "react";
+import TextareaAutosize from "react-textarea-autosize";
 
-import styles from './Chat.module.scss';
-import { targetValueSetter } from '../../../Utils/InputUtils';
-import { ReactComponent as RightArrow } from './right-arrow.svg';
-import { useSocket } from '../SocketConnection/SocketConnection';
+import styles from "./Chat.module.scss";
+import { targetValueSetter } from "../../../Utils/InputUtils";
+import { ReactComponent as RightArrow } from "./right-arrow.svg";
+import { useSocket } from "../SocketConnection/SocketConnection";
 
 type ChatMessage = {
   timestamp: Date;
@@ -20,13 +20,17 @@ const getMessageElement = (msg: ChatMessage, i: number) => {
   );
 };
 
-export const Chat = () => {
+type ChatProps = {
+  visible: boolean;
+};
+
+export const Chat = (props: ChatProps) => {
   // Maybe not useState for this, to prevent so many copies?
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const { socketConnection } = useSocket();
 
-  const addChatMessage = (chatMessage: Omit<ChatMessage, 'timestamp'>) => {
+  const addChatMessage = (chatMessage: Omit<ChatMessage, "timestamp">) => {
     const msgWithTimestamp = {
       ...chatMessage,
       timestamp: new Date(),
@@ -36,24 +40,24 @@ export const Chat = () => {
 
   useEffect(() => {
     const publisher = socketConnection.getPublisher();
-    const a = publisher.subscribe('chatMessage', (msg) => {
+    const a = publisher.subscribe("chatMessage", (msg) => {
       addChatMessage({
         from: msg.source.name || msg.source.id,
         text: msg.text,
       });
     });
 
-    const b = publisher.subscribe('user-left-room', (msg) => {
+    const b = publisher.subscribe("user-left-room", (msg) => {
       addChatMessage({
         from: msg.source.name || msg.source.id,
         text: `[left the room]`,
       });
     });
 
-    const c = publisher.subscribe('user-joined-room', (msg) => {
+    const c = publisher.subscribe("user-joined-room", (msg) => {
       addChatMessage({
         from: msg.source.name || msg.source.id,
-        text: '[joined the room]',
+        text: "[joined the room]",
       });
     });
 
@@ -66,15 +70,20 @@ export const Chat = () => {
 
   const onSend = (text: string) => {
     socketConnection.sendToServer({
-      type: 'chatMessage',
+      type: "chatMessage",
       text,
     });
     const chatMessage = {
-      from: socketConnection.getLocalUserName() || 'me',
+      from: socketConnection.getLocalUserName() || "me",
       text,
     };
     addChatMessage(chatMessage);
   };
+
+  console.log(props.visible);
+  if (!props.visible) {
+    return null;
+  }
 
   return <ChatWindow messages={messages} onSend={onSend} />;
 };
@@ -85,8 +94,7 @@ interface ChatWindowProps {
 }
 
 const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
-  const [chatMessage, setChatMessage] = useState('');
-  const [showChat, setShowChat] = useState(true);
+  const [chatMessage, setChatMessage] = useState("");
   const [showFullChat, setShowFullChat] = useState(false);
 
   const shownMessages =
@@ -97,7 +105,7 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
   const handleSendMessage = () => {
     if (chatMessage.length > 0) {
       onSend(chatMessage);
-      setChatMessage('');
+      setChatMessage("");
     }
   };
 
@@ -110,18 +118,10 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
         >
           F
         </button>
-        <button
-          className={styles.chatOption}
-          onClick={() => setShowChat(!showChat)}
-        >
-          H
-        </button>
       </div>
-      {showChat && (
-        <div className={styles.chatDialog}>
-          {shownMessages.map(getMessageElement)}
-        </div>
-      )}
+      <div className={styles.chatDialog}>
+        {shownMessages.map(getMessageElement)}
+      </div>
       <div className={styles.chatInputContainer}>
         <TextareaAutosize
           minRows={1}
@@ -130,7 +130,7 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
           onChange={targetValueSetter(setChatMessage)}
           value={chatMessage}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') {
+            if (event.key === "Enter") {
               handleSendMessage();
               // Prevent the text area inserting a newline
               event.preventDefault();
