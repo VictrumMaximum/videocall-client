@@ -28,6 +28,7 @@ type ManageTrackArgs = {
   senderType: SenderType;
 } & WithPeers;
 
+// Send tracks by passing a MediaStreamTrack, or stop tracks by passing null.
 export const manageTrack = (args: ManageTrackArgs) => {
   const { streamLabel, track, senderType, peers } = args;
 
@@ -38,7 +39,17 @@ export const manageTrack = (args: ManageTrackArgs) => {
       }
     : null;
 
-  const sendTrack = (streamInfo: StreamInfo) => (peer: Peer) => {
+  const sendOrStop = streamInfo
+    ? sendTrack(streamInfo, senderType)
+    : stopStrack(senderType);
+
+  for (const peer of Object.values(peers)) {
+    sendOrStop(peer);
+  }
+};
+
+const sendTrack =
+  (streamInfo: StreamInfo, senderType: SenderType) => (peer: Peer) => {
     const { stream, track } = streamInfo;
 
     const sender = peer.senders[senderType];
@@ -56,21 +67,14 @@ export const manageTrack = (args: ManageTrackArgs) => {
     }
   };
 
-  const stopStrack = (peer: Peer) => {
-    const sender = peer.senders[senderType];
+const stopStrack = (senderType: SenderType) => (peer: Peer) => {
+  const sender = peer.senders[senderType];
 
-    if (sender) {
-      // Stop transmitting but keep the sender alive.
-      // This shouldn't trigger re-negotiation.
-      sender.replaceTrack(null);
-    } else {
-      // Do nothing, since there is nothing to stop.
-    }
-  };
-
-  const fun = streamInfo ? sendTrack(streamInfo) : stopStrack;
-
-  for (const peer of Object.values(peers)) {
-    fun(peer);
+  if (sender) {
+    // Stop transmitting but keep the sender alive.
+    // This shouldn't trigger re-negotiation.
+    sender.replaceTrack(null);
+  } else {
+    // Do nothing, since there is nothing to stop.
   }
 };

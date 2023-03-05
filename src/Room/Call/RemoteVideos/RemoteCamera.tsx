@@ -8,6 +8,7 @@ interface Props {
   stream: MediaStream | null;
   user: SocketUser;
   nickname?: string;
+  placeHolder: React.ReactElement;
 }
 
 export const RemoteCamera = ({ user, stream }: Props) => {

@@ -3,32 +3,17 @@
   display: flex;
 }
 
-.focusContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.placeHolder {
-  box-sizing: border-box;
-  border: 1px solid white;
-  border-radius: 5px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  max-width: 100%;
+.mainVideoContainer {
   height: 100%;
-  aspect-ratio: 1;
+  width: 100%;
 }
 
-.verticalVideoBar {
-  flex-basis: 25%;
-  flex-direction: column;
-  justify-content: flex-end;
-  display: flex;
+.sideVideoContainer {
+  // TODO
+  display: none;
 }
 
-.remoteVideo {
-  max-width: 100%;
-  max-height: 100%;
+.video {
+  height: 100%;
+  width: 100%;
 }

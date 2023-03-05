@@ -49,13 +49,13 @@ export type WithMessage<T extends keyof MessagesToClient> = {
 };
 
 export interface IPeersContext {
-  peers: Peers;
+  peers: Peer[];
 }
 
 const PeersContext = createContext<IPeersContext | null>(null);
 
 export const PeersProvider: React.FC = ({ children }) => {
-  const [peers, setPeers] = useState<IPeersContext["peers"]>({});
+  const [peers, setPeers] = useState<Peers>({});
   const { socketConnection } = useSocket();
   const { camTrack, micTrack, screenVideoTrack } = useStreams();
 
@@ -93,6 +93,7 @@ export const PeersProvider: React.FC = ({ children }) => {
     };
   }, [socketConnection, peers]);
 
+  // Manage media streams
   useEffect(() => {
     manageTrack({
       streamLabel: "user",
@@ -120,6 +121,7 @@ export const PeersProvider: React.FC = ({ children }) => {
     // });
   }, [camTrack, micTrack, screenVideoTrack, peers]);
 
+  // =========== Unmounting stuff ======================
   const unmountingRef = useRef(false);
   useEffect(
     () => () => {
@@ -137,9 +139,12 @@ export const PeersProvider: React.FC = ({ children }) => {
     },
     [peers]
   );
+  // =========== /Unmounting stuff ======================
 
   return (
-    <PeersContext.Provider value={{ peers }}>{children}</PeersContext.Provider>
+    <PeersContext.Provider value={{ peers: Object.values(peers) }}>
+      {children}
+    </PeersContext.Provider>
   );
 };
 
