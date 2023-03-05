@@ -33,29 +33,31 @@ const PeerVideo = (props: PeerVideoProps) => {
     sideStream: null,
   });
 
+  const [isCameraActive, setIsCameraActive] = useState(true);
+
   const cameraStream = peer.connections.camera.incomingStream;
   const screenStream = peer.connections.screen.incomingStream;
 
-  console.log("peerStreams");
-  console.log({
-    cameraStream,
-    screenStream,
-  });
-
-  console.log("stateStreams");
-  console.log(streams);
-
   useEffect(() => {
-    console.log("setting streams");
-    console.log({
-      cameraStream,
-      screenStream,
-    });
     setStreams({
-      mainStream: screenStream ?? cameraStream,
+      mainStream: screenStream ?? (isCameraActive ? cameraStream : null),
       sideStream: screenStream ? cameraStream : null,
     });
-  }, [cameraStream, screenStream]);
+  }, [cameraStream, screenStream, isCameraActive]);
+
+  useEffect(() => {
+    const videoTrack = cameraStream?.getVideoTracks()[0];
+    const onMute = () => setIsCameraActive(false);
+    const onUnMute = () => setIsCameraActive(true);
+
+    videoTrack?.addEventListener("mute", onMute);
+    videoTrack?.addEventListener("unmute", onUnMute);
+
+    return () => {
+      videoTrack?.removeEventListener("mute", onMute);
+      videoTrack?.removeEventListener("unmute", onUnMute);
+    };
+  });
 
   const userPlaceHolder = peer && (
     <div className={styles.userPlaceHolder}>
