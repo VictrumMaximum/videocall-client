@@ -1,11 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useStreams } from "../MediaStreams/StreamProvider";
-import { SendToServer, useSocket } from "../SocketConnection/SocketConnection";
-import {
-  MessagesToClient,
-  SocketUser,
-  StreamType,
-} from "../SocketConnection/SocketTypes";
+import { useSocket } from "../SocketConnection/SocketConnection";
+import { SocketUser, StreamType } from "../SocketConnection/SocketTypes";
 import { handleNewICECandidateMsg } from "./handlers/ICE";
 import { handleMediaAnswer, handleMediaOffer } from "./handlers/Negotiation";
 import { manageTrack } from "./handlers/TrackManagement";
@@ -13,47 +9,6 @@ import {
   handleUserJoinedRoom,
   handleUserLeftRoom,
 } from "./handlers/UserJoinLeave";
-
-export interface Peers {
-  [remoteUserId: string]: Peer;
-}
-
-export interface Peer {
-  user: SocketUser;
-  connections: Record<StreamType, Connection>;
-}
-
-export interface Connection {
-  peerConnection: RTCPeerConnection;
-  incomingStream: MediaStream | null;
-  senders: {
-    video: RTCRtpSender | null;
-    audio: RTCRtpSender | null;
-  };
-}
-
-// ===== Event handlers parameter signature types =====
-export type SetPeers = React.Dispatch<React.SetStateAction<Peers>>;
-export type WithPeers = { peers: Peers };
-export type WithSetPeers = { setPeers: SetPeers };
-
-export type WithSendToServer = { sendToServer: SendToServer };
-
-export type WithUserId = { remoteUserId: string };
-export type WithUser = { user: SocketUser };
-
-export type WithStream = { stream: MediaStream };
-
-export type WithMessage<T extends keyof MessagesToClient> = {
-  msg: MessagesToClient[T];
-};
-
-export type WithStreamType = { streamType: StreamType };
-
-export interface IPeersContext {
-  peers: Peer[];
-}
-// ===== /Event handlers parameter signature types =====
 
 export const PeersProvider: React.FC = ({ children }) => {
   const [peers, setPeers] = useState<Peers>({});
@@ -156,3 +111,27 @@ export const usePeers = () => {
 
   return context;
 };
+
+export interface Peers {
+  [remoteUserId: string]: Peer;
+}
+
+export interface Peer {
+  user: SocketUser;
+  connections: Record<StreamType, Connection>;
+}
+
+export interface Connection {
+  peerConnection: RTCPeerConnection;
+  incomingStream: MediaStream | null;
+  isSharingVideo: boolean;
+  dataChannel: RTCDataChannel | null;
+  senders: {
+    video: RTCRtpSender | null;
+    audio: RTCRtpSender | null;
+  };
+}
+
+export interface IPeersContext {
+  peers: Peer[];
+}

@@ -1,13 +1,12 @@
 import { handleICECandidateEvent } from "./ICE";
 import { handleNegotiationNeededEvent } from "./Negotiation";
+import { Connection, Peer, Peers } from "../PeerContext";
 import {
-  Connection,
-  Peer,
   WithMessage,
   WithPeers,
   WithSendToServer,
   WithSetPeers,
-} from "../PeerContext";
+} from "./HandlerArgsTypes";
 import { SocketUser, StreamType } from "../../SocketConnection/SocketTypes";
 
 export const handleUserJoinedRoom = (
@@ -17,11 +16,9 @@ export const handleUserJoinedRoom = (
     WithSetPeers
 ) => {
   const { msg, peers, setPeers, sendToServer } = args;
-  console.log("handleUserJoinedRoom");
+  const remoteUser = msg.source;
 
-  const user = msg.source;
-
-  const remoteUserId = user.id;
+  const remoteUserId = remoteUser.id;
 
   // Check if peer alraedy exists.
   if (peers[remoteUserId]) {
@@ -29,7 +26,7 @@ export const handleUserJoinedRoom = (
     return peers[remoteUserId];
   }
 
-  const peer = createPeer(user);
+  const peer = createPeer(remoteUser);
 
   // Add peer to state.
   setPeers({
@@ -39,7 +36,6 @@ export const handleUserJoinedRoom = (
 
   Object.entries(peer.connections).forEach((entry) => {
     const streamType = entry[0] as StreamType;
-    console.log(`creating callbacks for streamType: ${streamType}`);
     const connection = entry[1] as Connection;
 
     const pc = connection.peerConnection;
@@ -63,22 +59,44 @@ export const handleUserJoinedRoom = (
     };
 
     pc.ontrack = (event: RTCTrackEvent) => {
+      console.log("ontrack");
       const [stream] = event.streams;
       const userId = peer.user.id;
 
-      setPeers((oldPeers) => ({
-        ...oldPeers,
-        [userId]: {
-          ...oldPeers[userId],
-          connections: {
-            ...oldPeers[userId].connections,
-            [streamType]: {
-              ...oldPeers[userId].connections[streamType],
-              incomingStream: stream,
+      const hasVideoTrack = stream.getVideoTracks().length > 0;
+
+      const updateConnection =
+        (update: Partial<Peer["connections"]["camera"]>) =>
+        (oldPeers: Peers) => ({
+          ...oldPeers,
+          [userId]: {
+            ...oldPeers[userId],
+            connections: {
+              ...oldPeers[userId].connections,
+              [streamType]: {
+                ...oldPeers[userId].connections[streamType],
+                ...update,
+              },
             },
           },
-        },
-      }));
+        });
+
+      stream.onremovetrack = (event) => {
+        if (event.track.kind === "video") {
+          setPeers(
+            updateConnection({
+              isSharingVideo: false,
+            })
+          );
+        }
+      };
+
+      setPeers(
+        updateConnection({
+          incomingStream: stream,
+          isSharingVideo: hasVideoTrack,
+        })
+      );
     };
   });
 
@@ -97,36 +115,37 @@ export const handleUserLeftRoom = (
 };
 
 const createPeer = (user: SocketUser): Peer => {
-  // Create RTCPeerConnection
-  console.log("Creating PeerConnection with user " + user);
-
-  const config = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  };
-
-  const pcCamera = new RTCPeerConnection(config);
-  const pcScreen = new RTCPeerConnection(config);
+  console.log("Creating PeerConnection with user:");
+  console.log(user);
 
   // Create object to keep data about peer in one place.
   return {
     user,
     connections: {
-      camera: {
-        peerConnection: pcCamera,
-        incomingStream: null,
-        senders: {
-          video: null,
-          audio: null,
-        },
-      },
-      screen: {
-        peerConnection: pcScreen,
-        incomingStream: null,
-        senders: {
-          video: null,
-          audio: null,
-        },
-      },
+      camera: createConnection(),
+      screen: createConnection(),
+    },
+  };
+};
+
+// Create RTCPeerConnection
+const createConnection = (): Peer["connections"]["camera"] => {
+  const peerConnection = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  });
+
+  return {
+    peerConnection,
+    incomingStream: null,
+    isSharingVideo: false,
+    dataChannel: null,
+    // dataChannel: peerConnection.createDataChannel("streamInfo", {
+    //   negotiated: true,
+    //   id: 0,
+    // }),
+    senders: {
+      video: null,
+      audio: null,
     },
   };
 };

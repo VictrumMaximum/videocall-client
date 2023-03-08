@@ -4,7 +4,7 @@ import {
   WithSendToServer,
   WithStreamType,
   WithUserId,
-} from "../PeerContext";
+} from "./HandlerArgsTypes";
 
 // called by RTCPeerConnection when new ICE candidate is found for our network
 export const handleICECandidateEvent = (
@@ -34,7 +34,6 @@ export const handleNewICECandidateMsg = (
 
   const userId = msg.source.id;
   if (peers[userId]) {
-    console.log(`streamType: ${streamType}`);
     peers[userId].connections[streamType].peerConnection
       .addIceCandidate(new RTCIceCandidate(msg.candidate))
       .catch(console.error);

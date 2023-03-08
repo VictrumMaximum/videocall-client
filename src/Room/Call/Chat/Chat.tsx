@@ -80,7 +80,6 @@ export const Chat = (props: ChatProps) => {
     addChatMessage(chatMessage);
   };
 
-  console.log(props.visible);
   if (!props.visible) {
     return null;
   }

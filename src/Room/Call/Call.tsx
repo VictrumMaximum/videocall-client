@@ -1,13 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 
-import styles from "./Call.module.scss";
-import { Chat } from "./Chat/Chat";
-import { ToggleButtons } from "./ToggleButtons/ToggleButtons";
-import { RemoteVideos } from "./RemoteVideos/RemoteVideos";
-import { LocalVideo } from "./LocalVideo/LocalVideo";
 import { SocketProvider } from "./SocketConnection/SocketConnection";
 import { PeersProvider } from "./PeerConnection/PeerContext";
 import { StreamProvider } from "./MediaStreams/StreamProvider";
+import { CallContent } from "./CallContent";
 
 type CallProps = {
   roomId: string;
@@ -17,23 +13,11 @@ type CallProps = {
 export const Call = (props: CallProps) => {
   const { roomId } = props;
 
-  const [showChat, setShowChat] = useState(false);
-
-  const toggleChat = () => setShowChat((x) => !x);
-
   return (
     <SocketProvider roomId={roomId}>
       <StreamProvider>
         <PeersProvider>
-          <div className={styles.mainContainer}>
-            {/* <div className={styles.topBar}></div> */}
-            {<LocalVideo />}
-            <RemoteVideos />
-            <ToggleButtons roomId={roomId} toggleChat={toggleChat} />
-            {/* <div className={styles.bottomBar}> */}
-            <Chat visible={showChat} />
-            {/* </div> */}
-          </div>
+          <CallContent roomId={roomId} />
         </PeersProvider>
       </StreamProvider>
     </SocketProvider>

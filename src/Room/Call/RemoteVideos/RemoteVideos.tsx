@@ -1,12 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import { Peer, usePeers } from "../PeerConnection/PeerContext";
+import { MainVideo } from "./MainVideo";
 
 import styles from "./RemoteVideos.module.scss";
-
-type Streams = {
-  mainStream: MediaStream | null;
-  sideStream: MediaStream | null;
-};
+import { SideVideo } from "./SideVideo";
 
 export const RemoteVideos = () => {
   const { peers } = usePeers();
@@ -14,11 +11,9 @@ export const RemoteVideos = () => {
   // NOTE: currently only displaying one peer.
   const peer = peers.length > 0 ? peers[0] : null;
 
-  if (!peer) {
-    return <NoPeer />;
-  }
+  const element = peer ? <PeerVideo peer={peer} /> : <NoPeer />;
 
-  return <PeerVideo peer={peer} />;
+  return <div className={styles.container}>{element}</div>;
 };
 
 type PeerVideoProps = {
@@ -28,36 +23,10 @@ type PeerVideoProps = {
 const PeerVideo = (props: PeerVideoProps) => {
   const { peer } = props;
 
-  const [streams, setStreams] = useState<Streams>({
-    mainStream: null,
-    sideStream: null,
-  });
+  const cameraConnection = peer.connections.camera;
+  const screenConnection = peer.connections.screen;
 
-  const [isCameraActive, setIsCameraActive] = useState(true);
-
-  const cameraStream = peer.connections.camera.incomingStream;
-  const screenStream = peer.connections.screen.incomingStream;
-
-  useEffect(() => {
-    setStreams({
-      mainStream: screenStream ?? (isCameraActive ? cameraStream : null),
-      sideStream: screenStream ? cameraStream : null,
-    });
-  }, [cameraStream, screenStream, isCameraActive]);
-
-  useEffect(() => {
-    const videoTrack = cameraStream?.getVideoTracks()[0];
-    const onMute = () => setIsCameraActive(false);
-    const onUnMute = () => setIsCameraActive(true);
-
-    videoTrack?.addEventListener("mute", onMute);
-    videoTrack?.addEventListener("unmute", onUnMute);
-
-    return () => {
-      videoTrack?.removeEventListener("mute", onMute);
-      videoTrack?.removeEventListener("unmute", onUnMute);
-    };
-  });
+  const isScreenActive = screenConnection.isSharingVideo;
 
   const userPlaceHolder = peer && (
     <div className={styles.userPlaceHolder}>
@@ -65,47 +34,23 @@ const PeerVideo = (props: PeerVideoProps) => {
     </div>
   );
 
+  const mainConnection = isScreenActive ? screenConnection : cameraConnection;
+  const sideConnection = isScreenActive ? cameraConnection : null;
+
   return (
-    <div className={styles.container}>
-      <div className={styles.mainVideoContainer}>
-        <Video stream={streams.mainStream} placeHolder={userPlaceHolder} />
-      </div>
-      <div className={styles.sideVideoContainer}>
-        <Video stream={streams.sideStream} />
-      </div>
+    <div className={styles.peerVideoContainer}>
+      <MainVideo
+        stream={mainConnection.incomingStream}
+        showVideoTrack={mainConnection.isSharingVideo}
+        placeHolder={userPlaceHolder}
+      />
+
+      <SideVideo
+        stream={sideConnection?.incomingStream || null}
+        showVideoTrack={sideConnection?.isSharingVideo || false}
+      />
     </div>
   );
 };
 
-const NoPeer = () => {
-  return <div className={styles.noPeerContainer}></div>;
-};
-
-type VideoProps = {
-  stream: MediaStream | null;
-  placeHolder?: React.ReactElement | null;
-};
-
-const Video = (props: VideoProps) => {
-  const { stream, placeHolder } = props;
-  const ref = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.srcObject = stream;
-    }
-  }, [stream]);
-
-  if (stream) {
-    return (
-      <video
-        className={styles.video}
-        // id={user.id}
-        ref={ref}
-        autoPlay
-      ></video>
-    );
-  }
-
-  return placeHolder || null;
-};
+const NoPeer = () => null;

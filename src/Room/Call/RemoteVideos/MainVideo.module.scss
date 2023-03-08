@@ -1,0 +1,25 @@
+.mainVideoContainer {
+  height: 100%;
+  width: 100%;
+}
+
+.mainVideo {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+
+.invisible {
+  height: 0;
+  width: 0;
+}
+
+.placeHolderContainer {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

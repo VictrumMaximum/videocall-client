@@ -4,7 +4,7 @@ import {
   WithSendToServer,
   WithStreamType,
   WithUserId,
-} from "../PeerContext";
+} from "./HandlerArgsTypes";
 
 // called by RTCPeerconnection when a track is added or removed
 export const handleNegotiationNeededEvent = async (

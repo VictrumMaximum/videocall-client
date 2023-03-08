@@ -1,5 +1,6 @@
 import { StreamType } from "../../SocketConnection/SocketTypes";
-import { Peer, WithPeers } from "../PeerContext";
+import { Peer } from "../PeerContext";
+import { WithPeers } from "./HandlerArgsTypes";
 
 const streams: Record<StreamType, MediaStream> = {
   camera: new MediaStream(),
@@ -19,49 +20,45 @@ type ManageTrackArgs = {
 // Send tracks by passing a MediaStreamTrack, or stop tracks by passing null.
 export const manageTrack = (args: ManageTrackArgs) => {
   const { streamType, track, senderType, peers } = args;
-
   if (track) {
     const stream = streams[streamType];
-
     const sendTrack = (peer: Peer) => {
-      const senders = peer.connections[streamType].senders;
+      const connection = peer.connections[streamType];
+      const senders = connection.senders;
       const sender = senders[senderType];
-      const pc = peer.connections[streamType].peerConnection;
-
+      const pc = connection.peerConnection;
       if (!sender) {
-        console.log(`adding track for ${senderType}`);
-
         // This triggers negotiation.
         senders[senderType] = pc.addTrack(track, stream);
       } else {
         // If there is already a track defined, replace it.
         // This may or may not trigger negotiation.
         // https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpSender/replaceTrack
-        console.log(`replacing track for ${senderType}`);
-
         sender.replaceTrack(track); // Don't await this promise
       }
     };
-
     for (const peer of Object.values(peers)) {
       sendTrack(peer);
+      console.log(peer.connections[streamType].dataChannel?.readyState);
+      if (peer.connections[streamType].dataChannel?.readyState === "open") {
+        peer.connections[streamType].dataChannel?.send(`${senderType}On`);
+      }
     }
   } else {
     const stopStrack = (peer: Peer) => {
-      console.log(peer);
       const sender = peer.connections[streamType].senders[senderType];
-
       if (sender) {
-        // Stop transmitting but keep the sender alive.
-        // This shouldn't trigger re-negotiation.
-        sender.replaceTrack(null);
+        peer.connections[streamType].peerConnection.removeTrack(sender);
+        peer.connections[streamType].senders[senderType] = null;
       } else {
         // Do nothing, since there is nothing to stop.
       }
     };
-
     for (const peer of Object.values(peers)) {
       stopStrack(peer);
+      if (peer.connections[streamType].dataChannel?.readyState === "open") {
+        peer.connections[streamType].dataChannel?.send(`${senderType}Off`);
+      }
     }
   }
 };
