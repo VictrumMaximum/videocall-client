@@ -1,8 +1,9 @@
 // @import url("https://fonts.googleapis.com/css?family=Patrick+Hand+SC|Roboto&display=swap");
 @import url("https://fonts.googleapis.com/css?family=Amatic+SC");
 @import url("https://fonts.googleapis.com/css?family=Dancing+Script");
+@import url("https://fonts.googleapis.com/css?family=Roboto+Condensed");
 
-$bg-color: #acacac;
+$bg-color: rgb(19 85 90);
 
 .welcomeScreen {
   z-index: 0;
@@ -14,8 +15,9 @@ $bg-color: #acacac;
   flex-direction: column;
   justify-content: center;
   // font-family: "Amatic SC";
-  font-family: 'Dancing Script';
-  font-weight: 800;
+  font-family: "Roboto Condensed";
+  // font-family: "Dancing Script";
+  font-weight: 400;
   // font-family: "Patrick Hand SC", cursive;
 }
 
@@ -42,6 +44,7 @@ $bg-color: #acacac;
 .nicknameHeader {
   font-size: 32px;
   margin: 0;
+  background-color: $bg-color;
 }
 
 .nicknameInput {
@@ -51,8 +54,9 @@ $bg-color: #acacac;
   font-size: 24px;
   text-align: center;
   // border: 2px solid #6600ff;
-  font-family: 'Dancing Script';
+  font-family: "Roboto Condensed";
   font-weight: 600;
+  background-color: rgb(92 92 92);
 }
 
 .roomContainer {
@@ -76,6 +80,7 @@ $bg-color: #acacac;
   // background-color: #ff71ff; // #ffc66c
   background-color: $bg-color;
   z-index: 1;
+  background-color: rgb(119 80 0);
 }
 
 .startButton:hover {
@@ -102,4 +107,5 @@ $bg-color: #acacac;
 
 .greeting {
   font-size: 64px;
+  background-color: $bg-color;
 }

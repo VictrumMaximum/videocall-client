@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
-import styles from './Welcome.module.scss';
+import styles from "./Welcome.module.scss";
 
-import { ReactComponent as CircleIcon } from './circle.svg';
-import { useNavigate, useParams } from 'react-router-dom';
-import { LocalStorage } from '../Utils/LocalStorage/LocalStorage';
-import { setFilledInDetails } from '../Room/Room';
-import { targetValueSetter } from '../Utils/InputUtils';
+import { ReactComponent as CircleIcon } from "./circle.svg";
+import { useNavigate, useParams } from "react-router-dom";
+import { LocalStorage } from "../Utils/LocalStorage/LocalStorage";
+import { setFilledInDetails } from "../Room/Room";
+import { targetValueSetter } from "../Utils/InputUtils";
 
 interface Props {}
 
@@ -14,8 +14,8 @@ export const Welcome = (props: Props) => {
   const params = useParams();
   const navigate = useNavigate();
 
-  const roomIdParam = params.roomId || '';
-  const lastNickname = LocalStorage.nickname.getNickname() || '';
+  const roomIdParam = params.roomId || "";
+  const lastNickname = LocalStorage.nickname.getNickname() || "";
 
   const [roomName, setRoomName] = useState(roomIdParam);
   const [nickname, setNickname] = useState(lastNickname);
@@ -101,8 +101,8 @@ const Bubble = (props: BubbleProps) => {
       width={size}
       height={size}
       style={{
-        stroke: 'yellow',
-        position: 'fixed',
+        stroke: "rgb(119 80 0)",
+        position: "fixed",
         bottom: offsetBottom,
         left: offsetLeft,
       }}

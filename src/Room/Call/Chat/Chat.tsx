@@ -15,7 +15,12 @@ type ChatMessage = {
 const getMessageElement = (msg: ChatMessage, i: number) => {
   return (
     <div className={styles.message} key={`chatMessage_${i}`}>
-      {msg.from}: {msg.text} ({msg.timestamp.toLocaleTimeString()})
+      <div>
+        {msg.from}: {msg.text}
+      </div>
+      <div className={styles.messageTimestamp}>
+        {msg.timestamp.toLocaleTimeString()}
+      </div>
     </div>
   );
 };
@@ -110,15 +115,16 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
 
   return (
     <div className={styles.chatContainer}>
-      <div className={styles.chatOptions}>
-        <button
-          className={styles.chatOption}
+      <div className={styles.chatDialog}>
+        <div
+          className={styles.chatSizeToggleContainer}
           onClick={() => setShowFullChat(!showFullChat)}
         >
-          F
-        </button>
-      </div>
-      <div className={styles.chatDialog}>
+          <RightArrow
+            className={styles.chatSizeToggleArrow}
+            style={{ rotate: showFullChat ? "90deg" : "-90deg" }}
+          />
+        </div>
         {shownMessages.map(getMessageElement)}
       </div>
       <div className={styles.chatInputContainer}>

@@ -1,9 +1,12 @@
+@import "../../Room.module.scss";
+
 .chatContainer {
   width: 100%;
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
   max-height: 50%;
+  background-color: rgb(19 85 90);
 }
 
 $chatHeight: 30px;
@@ -19,6 +22,8 @@ $chatHeight: 30px;
   font-size: 20px;
   line-height: 25px;
   background-color: transparent;
+  border: 1px solid black;
+  font-family: $font-family;
 }
 
 .chatButtonsContainer {
@@ -42,7 +47,7 @@ $chatHeight: 30px;
   position: absolute;
   height: 100%;
   width: 20px;
-  fill: red;
+  fill: black;
   top: -2px;
   right: 5px;
 }
@@ -66,9 +71,7 @@ $chatHeight: 30px;
 }
 
 .chatDialog {
-  padding: 10px;
-  padding-top: 0;
-  background-color: rgba(255, 174, 0, 0.2);
+  padding: 0 10px;
   overflow: hidden;
   margin-bottom: 5px;
   border-radius: 5px;
@@ -77,11 +80,40 @@ $chatHeight: 30px;
 
 .message {
   border-bottom: 1px solid black;
-  font-size: 22px;
+  font-size: 18px;
   padding-bottom: 5px;
   padding-top: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.message:last-child {
+  border: none;
+}
+
+.messageTimestamp {
+  font-size: 12px;
 }
 
 .chatInputContainer {
   position: relative;
+}
+
+.chatSizeToggleContainer {
+  width: 100%;
+  height: 20px;
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 26px;
+  padding: 2px 0;
+}
+
+.chatSizeToggleContainer:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.chatSizeToggleArrow {
+  height: 100%;
 }
