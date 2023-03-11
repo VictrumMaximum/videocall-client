@@ -5,13 +5,13 @@ import React, {
   useMemo,
   useRef,
   useState,
-} from 'react';
-import { SocketPublisher } from './Publisher';
+} from "react";
+import { SocketPublisher } from "./Publisher";
 import {
   MessageToClientValues,
   MessageToServerValues,
   SocketUser,
-} from './SocketTypes';
+} from "./SocketTypes";
 
 export interface PeersState {
   [key: string]: {
@@ -22,12 +22,12 @@ export interface PeersState {
 }
 
 const getOwnNickname = () => {
-  return window.localStorage.getItem('nickname');
+  return window.localStorage.getItem("nickname");
 };
 
 const hostName =
-  process.env.NODE_ENV === 'development'
-    ? 'ws://localhost:9120'
+  process.env.NODE_ENV === "development"
+    ? "ws://localhost:9120"
     : `wss://${window.location.host}`;
 
 const socketUrl = `${hostName}/videocall/socket`;
@@ -40,7 +40,7 @@ class SocketConnection {
   private roomId: string;
 
   // TODO: put localUserId and nickname in a User type?
-  private localUser: Omit<SocketUser, 'id'> & { id?: string };
+  private localUser: Omit<SocketUser, "id"> & { id?: string };
 
   private socketPublisher: SocketPublisher;
   private ws: WebSocket;
@@ -68,21 +68,23 @@ class SocketConnection {
 
   private connect() {
     if (this.isConnected()) {
-      console.warn('Cannot connect: Already connected');
+      console.warn("Cannot connect: Already connected");
       return this.ws;
     }
+
+    console.log("Connecting websocket...");
 
     const ws = new WebSocket(socketUrl);
 
     ws.onopen = () => {
-      console.log('WebSocket connected!');
+      console.log("WebSocket connected!");
 
       this.setIsConnected(true);
 
       // If this is the first time we connect, we expect a userId as response.
       // Otherwise, simply reconnect and continue using old userId.
       this.sendToServer({
-        type: 'register',
+        type: "register",
         roomId: this.roomId,
         name: this.localUser.name,
       });
@@ -97,12 +99,18 @@ class SocketConnection {
   private processIncomingMessage(msg: MessageEvent<any>) {
     const data: MessageToClientValues = JSON.parse(msg.data);
 
-    if (data.type !== 'new-ice-candidate') {
-      console.log('received message:');
+    if (data.type !== "new-ice-candidate") {
+      console.log("received message:");
       console.log(data);
     }
 
-    if (data.type === 'register') {
+    if (data.type === "ping") {
+      return this.sendToServer({
+        type: "pong",
+      });
+    }
+
+    if (data.type === "register") {
       const userId = data.userId;
 
       // continue using old id in case of reconnect
@@ -110,7 +118,7 @@ class SocketConnection {
 
       for (const participant of data.usersInRoom) {
         this.socketPublisher.emit({
-          type: 'user-joined-room',
+          type: "user-joined-room",
           source: participant,
         });
       }
@@ -121,7 +129,7 @@ class SocketConnection {
 
   public sendToServer: SendToServer = (msg) => {
     if (!this.isConnected()) {
-      console.error('WebSocket is not connected');
+      console.error("WebSocket is not connected");
       return;
     }
 
@@ -132,20 +140,20 @@ class SocketConnection {
     this.setIsConnected(false);
 
     if (event.code === this.EXPLICIT_DISCONNECT_CODE) {
-      console.log('WebSocket closed (explicit)');
+      console.log("WebSocket closed (explicit)");
       this.tearDown();
     } else {
       // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
       console.error(`Unexpected websocket close, code ${event.code}`); // usual reason code: 1006
 
       // Reconnect
-      this.connect();
+      this.ws = this.connect();
     }
   }
 
   public disconnect() {
     if (this.isConnected()) {
-      console.log('Disconnecting...');
+      console.log("Disconnecting...");
       this.ws.close(this.EXPLICIT_DISCONNECT_CODE);
     }
   }
@@ -222,7 +230,7 @@ export const useSocket = () => {
   const context = useContext(SocketContext);
 
   if (!context) {
-    throw new Error('CallContext is not defined!');
+    throw new Error("CallContext is not defined!");
   }
 
   return context;

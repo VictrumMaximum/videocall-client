@@ -32,7 +32,7 @@ export const Welcome = (props: Props) => {
 
     setFilledInDetails(true);
 
-    navigate(`/videocall/room/${roomName}`, {});
+    navigate(`/videocall/room/${roomName.toLowerCase()}`, {});
   };
 
   return (
@@ -65,6 +65,7 @@ export const Welcome = (props: Props) => {
           className={styles.nicknameInput}
           onChange={targetValueSetter(setRoomName)}
           value={roomName}
+          autoCapitalize={"none"}
         />
       </div>
       <div className={styles.bottomContainer}>

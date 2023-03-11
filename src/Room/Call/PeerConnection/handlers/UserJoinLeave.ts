@@ -6,6 +6,7 @@ import {
   WithPeers,
   WithSendToServer,
   WithSetPeers,
+  WithUserId,
 } from "./HandlerArgsTypes";
 import { SocketUser, StreamType } from "../../SocketConnection/SocketTypes";
 
@@ -39,6 +40,12 @@ export const handleUserJoinedRoom = (
     const connection = entry[1] as Connection;
 
     const pc = connection.peerConnection;
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === "disconnected") {
+        removePeer({ remoteUserId, peers, setPeers });
+      }
+    };
 
     // Set event handlers
     pc.onicecandidate = (event) =>
@@ -106,11 +113,31 @@ export const handleUserJoinedRoom = (
 export const handleUserLeftRoom = (
   args: WithMessage<"user-left-room"> & WithSetPeers & WithPeers
 ) => {
+  console.log("handleUserLeftRoom");
   const { msg, peers, setPeers } = args;
 
-  const userId = msg.source.id;
+  const remoteUserId = msg.source.id;
 
-  const { [userId]: _, ...rest } = peers;
+  removePeer({ remoteUserId, peers, setPeers });
+};
+
+const removePeer = ({
+  remoteUserId,
+  peers,
+  setPeers,
+}: WithPeers & WithSetPeers & WithUserId) => {
+  const { [remoteUserId]: peer, ...rest } = peers;
+  const user = peer.user;
+
+  console.log(`user ${user.name || user.id} left the room`);
+
+  Object.values(peer.connections).forEach((connection) => {
+    if (connection.peerConnection.connectionState !== "closed") {
+      connection.peerConnection.close();
+      connection.dataChannel?.close();
+    }
+  });
+
   setPeers(rest);
 };
 
