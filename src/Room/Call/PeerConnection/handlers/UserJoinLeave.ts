@@ -30,10 +30,10 @@ export const handleUserJoinedRoom = (
   const peer = createPeer(remoteUser);
 
   // Add peer to state.
-  setPeers({
-    ...peers,
+  setPeers((oldPeers) => ({
+    ...oldPeers,
     [remoteUserId]: peer,
-  });
+  }));
 
   Object.entries(peer.connections).forEach((entry) => {
     const streamType = entry[0] as StreamType;
@@ -126,6 +126,8 @@ const removePeer = ({
   peers,
   setPeers,
 }: WithPeers & WithSetPeers & WithUserId) => {
+  console.log("before");
+  console.log(peers);
   const { [remoteUserId]: peer, ...rest } = peers;
   const user = peer.user;
 
@@ -137,6 +139,9 @@ const removePeer = ({
       connection.dataChannel?.close();
     }
   });
+
+  console.log("set rest");
+  console.log(rest);
 
   setPeers(rest);
 };
