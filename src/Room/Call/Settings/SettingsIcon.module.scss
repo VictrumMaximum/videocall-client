@@ -1,0 +1,19 @@
+.container {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  width: 30px;
+  height: 30px;
+
+  z-index: 2;
+
+  border-radius: 50px;
+  cursor: pointer;
+}
+
+.gearIcon {
+  width: 100%;
+  height: 100%;
+  fill: rgb(19 85 90);
+  stroke: rgb(19 85 90);
+}

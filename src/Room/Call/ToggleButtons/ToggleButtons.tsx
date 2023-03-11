@@ -11,6 +11,7 @@ type ToggleButton = {
 type ToggleButtonsProps = {
   roomId: string;
   toggleChat: () => void;
+  unreadMessageAmount: number;
 };
 
 export const ToggleButtons = (props: ToggleButtonsProps) => {
@@ -44,11 +45,18 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
 
   return (
     <div className={styles.buttonContainer}>
-      {toggleButtons.map(({ onClick, content }, i) => (
-        // Not really a useful key for React, but these buttons will not change
-        // anyway, so no performance is lost here.
-        <RoundButton key={i} onClick={onClick} content={content} />
-      ))}
+      {toggleButtons.map(({ onClick, content }, i) => {
+        return (
+          <RoundButton
+            key={i}
+            onClick={onClick}
+            content={content}
+            unreadMessageAmount={
+              content === "Chat" ? props.unreadMessageAmount : undefined
+            }
+          />
+        );
+      })}
     </div>
   );
 };
@@ -56,6 +64,7 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
 interface RoundButtonProps {
   onClick?: (setEnabled: (enabled: boolean) => void) => void;
   content: React.ReactNode;
+  unreadMessageAmount?: number;
 }
 const RoundButton = (props: RoundButtonProps) => {
   const [enabled, setEnabled] = useState(false);
@@ -67,7 +76,7 @@ const RoundButton = (props: RoundButtonProps) => {
     }
 
     setLoading(true);
-    props.onClick((enabled) => {
+    props.onClick(() => {
       setEnabled(enabled);
       setLoading(false);
     });
@@ -81,6 +90,11 @@ const RoundButton = (props: RoundButtonProps) => {
       className={`${styles.roundButton} ${activeClass} ${loadingClass}`}
       onClick={handleOnClick}
     >
+      {!!props.unreadMessageAmount && (
+        <div className={styles.notificationCounter}>
+          {props.unreadMessageAmount}
+        </div>
+      )}
       {props.content}
     </div>
   );

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useMemo } from "react";
+import { useUpdateState } from "../../../hooks/useUpdateState";
 import { useCamera } from "./CameraStream";
 import { useMicrophone } from "./MicrophoneStream";
 import { useScreenVideo } from "./ScreenStream";
@@ -11,14 +12,34 @@ interface IStreamContext {
   toggleCam: () => void;
   toggleMic: () => void;
   toggleScreenVideo: () => void;
-  setCameraDeviceId: (deviceId: string) => void;
+  updateCameraConstraints: (contraints: CameraConstraints) => void;
   setMicDeviceId: (deviceId: string) => void;
 }
 
 const StreamContext = createContext<IStreamContext | null>(null);
 
+type CameraConstraints = Exclude<
+  MediaStreamConstraints["video"],
+  boolean | undefined
+>;
+type MicrophoneConstraints = Exclude<
+  MediaStreamConstraints["audio"],
+  boolean | undefined
+>;
+
 export const StreamProvider: React.FC = ({ children }) => {
-  const { track: camTrack, toggle: toggleCam } = useCamera();
+  const [cameraConstraints, updateCameraConstraints] =
+    useUpdateState<CameraConstraints>({ facingMode: "user" });
+
+  useEffect(() => {
+    console.log("new camera constraints");
+    console.log(cameraConstraints);
+  }, [cameraConstraints]);
+
+  const [micConstraints, updateMicConstraints] =
+    useUpdateState<MicrophoneConstraints>({});
+
+  const { track: camTrack, toggle: toggleCam } = useCamera(cameraConstraints);
   const { track: micTrack, toggle: toggleMic } = useMicrophone();
   const { track: screenVideoTrack, toggle: toggleScreenVideo } =
     useScreenVideo();
@@ -27,7 +48,7 @@ export const StreamProvider: React.FC = ({ children }) => {
     () => ({
       camTrack,
       toggleCam,
-      setCameraDeviceId: () => {},
+      updateCameraConstraints,
       micTrack,
       toggleMic,
       setMicDeviceId: () => {},
@@ -40,6 +61,7 @@ export const StreamProvider: React.FC = ({ children }) => {
       micTrack,
       screenVideoTrack,
       toggleCam,
+      updateCameraConstraints,
       toggleMic,
       toggleScreenVideo,
     ]

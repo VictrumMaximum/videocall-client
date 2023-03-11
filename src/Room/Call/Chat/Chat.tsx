@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 
 import styles from "./Chat.module.scss";
@@ -27,6 +27,7 @@ const getMessageElement = (msg: ChatMessage, i: number) => {
 
 type ChatProps = {
   visible: boolean;
+  setUnreadMessageAmount: (f: (amount: number) => number) => void;
 };
 
 export const Chat = (props: ChatProps) => {
@@ -41,6 +42,9 @@ export const Chat = (props: ChatProps) => {
       timestamp: new Date(),
     };
     setMessages((currentMessages) => [...currentMessages, msgWithTimestamp]);
+    if (!props.visible) {
+      props.setUnreadMessageAmount((x) => x + 1);
+    }
   };
 
   useEffect(() => {
@@ -71,7 +75,7 @@ export const Chat = (props: ChatProps) => {
       publisher.unsubscribe(b);
       publisher.unsubscribe(c);
     };
-  }, [socketConnection]);
+  }, [socketConnection, addChatMessage]);
 
   const onSend = (text: string) => {
     socketConnection.sendToServer({
@@ -101,6 +105,8 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
   const [chatMessage, setChatMessage] = useState("");
   const [showFullChat, setShowFullChat] = useState(false);
 
+  const messageListRef = useRef<HTMLDivElement | null>(null);
+
   const shownMessages =
     showFullChat || messages.length <= 3
       ? messages
@@ -112,6 +118,14 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
       setChatMessage("");
     }
   };
+
+  useEffect(() => {
+    if (messageListRef.current) {
+      messageListRef.current.scrollTo({
+        top: messageListRef.current.scrollHeight,
+      });
+    }
+  }, [messages.length]);
 
   return (
     <div className={styles.chatContainer}>
@@ -125,7 +139,9 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
             style={{ rotate: showFullChat ? "90deg" : "-90deg" }}
           />
         </div>
-        {shownMessages.map(getMessageElement)}
+        <div className={styles.messageList} ref={messageListRef}>
+          {shownMessages.map(getMessageElement)}
+        </div>
       </div>
       <div className={styles.chatInputContainer}>
         <TextareaAutosize

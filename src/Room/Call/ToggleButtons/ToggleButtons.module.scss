@@ -4,6 +4,7 @@
   display: flex;
   color: #7c7c7c;
   background-color: #540000;
+  z-index: 3;
 }
 
 .roundButton {
@@ -12,6 +13,7 @@
   align-items: center;
   border: 1px solid black;
   flex: 1;
+  position: relative;
 }
 
 .roundButton:hover {
@@ -20,4 +22,16 @@
 
 .activeButton {
   color: green;
+}
+
+.notificationCounter {
+  position: absolute;
+  top: -15px;
+  right: 20px;
+  border: 1px solid black;
+  border-radius: 50px;
+  width: 16px;
+  padding: 8px 9px;
+  text-align: center;
+  background-color: rgb(19 85 90);
 }
