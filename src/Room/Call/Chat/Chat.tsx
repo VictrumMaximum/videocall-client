@@ -125,7 +125,7 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
         top: messageListRef.current.scrollHeight,
       });
     }
-  }, [messages.length]);
+  }, [messages.length, showFullChat]);
 
   return (
     <div className={styles.chatContainer}>
