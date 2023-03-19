@@ -12,18 +12,17 @@ import {
 
 export const PeersProvider: React.FC = ({ children }) => {
   const [peers, setPeers] = useState<Peers>({});
-  const { socketConnection } = useSocket();
+  const { publisher: socketPublisher, sendToServer } = useSocket();
   const { camTrack, micTrack, screenVideoTrack } = useStreams();
 
   // Subscribe to socket messages with the appropriate handlers.
   // Unsubscribe and resubscribe when the useEffect dependencies are updated.
   const subsRef = useRef<number[]>([]);
   useEffect(() => {
-    const socketPublisher = socketConnection.getPublisher();
     const args = {
       peers,
       setPeers,
-      sendToServer: socketConnection.sendToServer,
+      sendToServer,
     };
 
     subsRef.current = [
@@ -47,7 +46,7 @@ export const PeersProvider: React.FC = ({ children }) => {
     return () => {
       subsRef.current.forEach((id) => socketPublisher.unsubscribe(id));
     };
-  }, [socketConnection, peers]);
+  }, [socketPublisher, sendToServer, peers]);
 
   // Manage outgoing media tracks
   useEffect(() => {

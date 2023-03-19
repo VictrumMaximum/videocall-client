@@ -1,5 +1,8 @@
 import React, {
   createContext,
+  Dispatch,
+  SetStateAction,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -8,9 +11,9 @@ import React, {
 } from "react";
 import { SocketPublisher } from "./Publisher";
 import {
+  MessageToClientType,
   MessageToClientValues,
   MessageToServerValues,
-  SocketUser,
 } from "./SocketTypes";
 
 export interface PeersState {
@@ -21,10 +24,6 @@ export interface PeersState {
   };
 }
 
-const getOwnNickname = () => {
-  return window.localStorage.getItem("nickname");
-};
-
 const hostName =
   process.env.NODE_ENV === "development"
     ? "ws://localhost:9120"
@@ -34,197 +33,14 @@ const socketUrl = `${hostName}/videocall/socket`;
 
 export type SendToServer = (msg: MessageToServerValues) => void;
 
-// TODO: rewrite this to a context + hook
-
-class SocketConnection {
-  private roomId: string;
-
-  // TODO: put localUserId and nickname in a User type?
-  private localUser: Omit<SocketUser, "id"> & { id?: string };
-
-  private socketPublisher: SocketPublisher;
-  private ws: WebSocket;
-
-  private setIsConnected: (isConnected: boolean) => void;
-
-  // https://www.iana.org/assignments/websocket/websocket.xhtml
-  private readonly EXPLICIT_DISCONNECT_CODE = 1000; // Normal Closure
-
-  constructor(roomId: string, setIsConnected: (isConnected: boolean) => void) {
-    this.roomId = roomId;
-    this.setIsConnected = setIsConnected;
-
-    this.socketPublisher = new SocketPublisher();
-    this.ws = this.connect();
-
-    this.localUser = {
-      name: getOwnNickname() ?? undefined,
-    };
-
-    this.sendToServer = this.sendToServer.bind(this);
-    this.processIncomingMessage = this.processIncomingMessage.bind(this);
-    this.handleOnClose = this.handleOnClose.bind(this);
-  }
-
-  private connect() {
-    if (this.isConnected()) {
-      console.warn("Cannot connect: Already connected");
-      return this.ws;
-    }
-
-    console.log("Connecting websocket...");
-
-    const ws = new WebSocket(socketUrl);
-
-    ws.onopen = () => {
-      console.log("WebSocket connected!");
-
-      this.setIsConnected(true);
-
-      // If this is the first time we connect, we expect a userId as response.
-      // Otherwise, simply reconnect and continue using old userId.
-      this.sendToServer({
-        type: "register",
-        roomId: this.roomId,
-        name: this.localUser.name,
-      });
-
-      ws.onmessage = this.processIncomingMessage;
-      ws.onclose = this.handleOnClose;
-    };
-
-    return ws;
-  }
-
-  private processIncomingMessage(msg: MessageEvent<any>) {
-    const data: MessageToClientValues = JSON.parse(msg.data);
-
-    if (data.type !== "new-ice-candidate") {
-      console.log("received message:");
-      console.log(data);
-    }
-
-    if (data.type === "ping") {
-      return this.sendToServer({
-        type: "pong",
-      });
-    }
-
-    if (data.type === "register") {
-      const userId = data.userId;
-
-      // continue using old id in case of reconnect
-      this.localUser.id = userId || this.localUser.id;
-
-      for (const participant of data.usersInRoom) {
-        this.socketPublisher.emit({
-          type: "user-joined-room",
-          source: participant,
-        });
-      }
-    }
-
-    this.socketPublisher.emit(data);
-  }
-
-  public sendToServer: SendToServer = (msg) => {
-    if (!this.isConnected()) {
-      console.error("WebSocket is not connected");
-      return;
-    }
-
-    this.ws.send(JSON.stringify(msg));
-  };
-
-  private handleOnClose(event: CloseEvent) {
-    this.setIsConnected(false);
-
-    if (event.code === this.EXPLICIT_DISCONNECT_CODE) {
-      console.log("WebSocket closed (explicit)");
-      this.tearDown();
-    } else {
-      // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-      console.error(`Unexpected websocket close, code ${event.code}`); // usual reason code: 1006
-
-      // Reconnect
-      this.ws = this.connect();
-    }
-  }
-
-  public disconnect() {
-    if (this.isConnected()) {
-      console.log("Disconnecting...");
-      this.ws.close(this.EXPLICIT_DISCONNECT_CODE);
-    }
-  }
-
-  private tearDown() {
-    // Not sure if this is good practice, but we need to somehow ensure that
-    // a new connection is created each time you leave and enter a room.
-    instance = null;
-
-    this.getPublisher().reset();
-  }
-
-  private isConnected() {
-    return this.ws && this.ws.readyState === this.ws.OPEN;
-  }
-
-  public getPublisher() {
-    return this.socketPublisher;
-  }
-
-  public getLocalUserName() {
-    return this.localUser.name;
-  }
-
-  public getLocalUserId() {
-    return this.localUser.id;
-  }
-}
-
-let instance: SocketConnection | null = null;
-
-const initSocketConnection = (
-  roomId: string,
-  setIsConnected: (isConnected: boolean) => void
-) => {
-  if (!instance) {
-    instance = new SocketConnection(roomId, setIsConnected);
-  }
-
-  return instance;
-};
-
 export interface ISocketContext {
-  socketConnection: SocketConnection;
   isConnected: boolean;
+  publisher: SocketPublisher;
+  localUser: LocalUser;
+  sendToServer: (msg: MessageToServerValues) => void;
 }
 
 const SocketContext = createContext<ISocketContext | null>(null);
-
-type SocketProviderProps = {
-  roomId: string;
-};
-
-export const SocketProvider = ({
-  children,
-  roomId,
-}: React.PropsWithChildren<SocketProviderProps>) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const socketConnection = useRef(initSocketConnection(roomId, setIsConnected));
-
-  const value = useMemo(
-    () => ({ socketConnection: socketConnection.current, isConnected }),
-    [isConnected]
-  );
-
-  useEffect(() => () => socketConnection.current.disconnect(), []);
-
-  return (
-    <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
-  );
-};
 
 export const useSocket = () => {
   const context = useContext(SocketContext);
@@ -234,4 +50,160 @@ export const useSocket = () => {
   }
 
   return context;
+};
+
+type SocketProviderProps = {
+  roomId: string;
+  name: string | null;
+};
+
+type LocalUser = {
+  id: string | null;
+  name: string | null;
+};
+
+export const SocketProvider = ({
+  children,
+  name,
+  roomId,
+}: React.PropsWithChildren<SocketProviderProps>) => {
+  const [isConnected, setIsConnected] = useState(false);
+  const [localUser, setLocalUser] = useState<LocalUser>({
+    id: null,
+    name,
+  });
+
+  const socketConnectionRef = useRef<WebSocket | null>(null);
+  const publisherRef = useRef(new SocketPublisher());
+  const publisher = publisherRef.current;
+
+  const connect = () => {
+    console.log("Connecting websocket...");
+
+    const ws = new WebSocket(socketUrl);
+
+    socketConnectionRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("WebSocket connected!");
+
+      setIsConnected(true);
+
+      // If this is the first time we connect, we expect a userId as response.
+      // Otherwise, simply reconnect and continue using old userId.
+      _sendToServer(ws, {
+        type: "register",
+        roomId,
+        user: localUser,
+      });
+
+      ws.onmessage = (msg) =>
+        processIncomingMessage(msg, ws, setLocalUser, publisher);
+
+      ws.onclose = (event: CloseEvent) => {
+        if (event.code === EXPLICIT_DISCONNECT_CODE) {
+          console.log("WebSocket closed (explicit)");
+          publisher.reset();
+        } else {
+          setIsConnected(false);
+
+          // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+          console.error(`Unexpected websocket close, code ${event.code}`); // usual reason code: 1006
+
+          // Reconnect
+          connect();
+        }
+      };
+    };
+  };
+
+  useEffect(() => {
+    connect();
+    return () => {
+      socketConnectionRef.current?.close(EXPLICIT_DISCONNECT_CODE);
+    };
+  }, []);
+
+  const sendToServer = useCallback((msg: MessageToServerValues) => {
+    const ws = socketConnectionRef.current;
+
+    if (!ws) {
+      console.error(`Cannot send: socket not initialised`);
+      return;
+    }
+
+    _sendToServer(ws, msg);
+  }, []);
+
+  const value = useMemo(
+    () => ({ isConnected, publisher, localUser, sendToServer }),
+    [isConnected, publisher, localUser, sendToServer]
+  );
+
+  return (
+    <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
+  );
+};
+
+const _sendToServer = (ws: WebSocket, msg: MessageToServerValues) => {
+  if (!isConnected(ws)) {
+    console.error("WebSocket is not connected");
+    return;
+  }
+
+  ws.send(JSON.stringify(msg));
+};
+
+const isConnected = (ws: WebSocket): boolean => {
+  return ws.readyState === ws.OPEN;
+};
+
+const processIncomingMessage = (
+  msg: MessageEvent<any>,
+  ws: WebSocket,
+  setLocalUser: Dispatch<SetStateAction<LocalUser>>,
+  publisher: SocketPublisher
+) => {
+  const data: MessageToClientValues = JSON.parse(msg.data);
+
+  logIncomingMessage(data);
+
+  if (data.type === "ping") {
+    return _sendToServer(ws, {
+      type: "pong",
+    });
+  }
+
+  if (data.type === "register") {
+    const userId = data.userId;
+
+    setLocalUser((localUser) => ({
+      ...localUser,
+      id: userId,
+    }));
+
+    for (const participant of data.usersInRoom) {
+      publisher.emit({
+        type: "user-joined-room",
+        source: participant,
+      });
+    }
+  }
+
+  publisher.emit(data);
+};
+
+// https://www.iana.org/assignments/websocket/websocket.xhtml
+const EXPLICIT_DISCONNECT_CODE = 1000; // Normal Closure
+
+const logIncomingMessage = (msg: MessageToClientValues) => {
+  const ignoredMessageTypes: MessageToClientType[] = [
+    "new-ice-candidate",
+    "chatMessage",
+    "ping",
+  ];
+
+  if (!ignoredMessageTypes.includes(msg.type)) {
+    console.log(msg);
+  }
 };

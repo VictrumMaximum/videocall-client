@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 
 import styles from "./Chat.module.scss";
@@ -31,24 +31,27 @@ type ChatProps = {
 };
 
 export const Chat = (props: ChatProps) => {
-  // Maybe not useState for this, to prevent so many copies?
+  const { visible, setUnreadMessageAmount } = props;
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  const { socketConnection } = useSocket();
+  const { publisher, localUser, sendToServer } = useSocket();
 
-  const addChatMessage = (chatMessage: Omit<ChatMessage, "timestamp">) => {
-    const msgWithTimestamp = {
-      ...chatMessage,
-      timestamp: new Date(),
-    };
-    setMessages((currentMessages) => [...currentMessages, msgWithTimestamp]);
-    if (!props.visible) {
-      props.setUnreadMessageAmount((x) => x + 1);
-    }
-  };
+  const addChatMessage = useCallback(
+    (chatMessage: Omit<ChatMessage, "timestamp">) => {
+      const msgWithTimestamp = {
+        ...chatMessage,
+        timestamp: new Date(),
+      };
+      setMessages((currentMessages) => [...currentMessages, msgWithTimestamp]);
+      if (!visible) {
+        setUnreadMessageAmount((x) => x + 1);
+      }
+    },
+    [visible, setUnreadMessageAmount]
+  );
 
   useEffect(() => {
-    const publisher = socketConnection.getPublisher();
     const a = publisher.subscribe("chatMessage", (msg) => {
       addChatMessage({
         from: msg.source.name || msg.source.id,
@@ -75,15 +78,15 @@ export const Chat = (props: ChatProps) => {
       publisher.unsubscribe(b);
       publisher.unsubscribe(c);
     };
-  }, [socketConnection, addChatMessage]);
+  }, [publisher, addChatMessage]);
 
   const onSend = (text: string) => {
-    socketConnection.sendToServer({
+    sendToServer({
       type: "chatMessage",
       text,
     });
     const chatMessage = {
-      from: socketConnection.getLocalUserName() || "me",
+      from: localUser.name || "me",
       text,
     };
     addChatMessage(chatMessage);

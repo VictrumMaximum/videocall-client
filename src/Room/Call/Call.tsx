@@ -11,10 +11,10 @@ type CallProps = {
 };
 
 export const Call = (props: CallProps) => {
-  const { roomId } = props;
+  const { roomId, nickname } = props;
 
   return (
-    <SocketProvider roomId={roomId}>
+    <SocketProvider roomId={roomId} name={nickname}>
       <StreamProvider>
         <PeersProvider>
           <CallContent roomId={roomId} />
