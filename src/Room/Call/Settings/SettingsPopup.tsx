@@ -33,7 +33,7 @@ export const SettingsPopup = () => {
         style={{ backgroundColor: colors.color3 }}
       >
         <div className={styles.header}>Settings</div>
-        <div>v1.01</div>
+        <div>v1.04</div>
         <TabularSelect
           orientation="row"
           activeItem={tab}

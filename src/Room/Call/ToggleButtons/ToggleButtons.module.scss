@@ -12,6 +12,7 @@
   border: 1px solid black;
   flex: 1;
   position: relative;
+  user-select: none;
 }
 
 .roundButton:hover {
