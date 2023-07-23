@@ -11,6 +11,7 @@ export type StreamContent = keyof typeof streams;
 
 type SenderType = keyof Peer["connections"][StreamType]["senders"];
 
+// FOR CAMERA + MIC
 type ManageTrackArgs = {
   track: MediaStreamTrack | null;
   streamType: StreamType;
@@ -61,4 +62,33 @@ export const manageTrack = (args: ManageTrackArgs) => {
       }
     }
   }
+};
+
+// FOR SCREEN AND SCREENAUDIO, SINCE THEY ORIGINATE FROM THE SAME STREAM
+
+type ManageStreamArgs = {
+  stream: MediaStream | null;
+  streamType: StreamType;
+} & WithPeers;
+
+// Send tracks by passing a MediaStreamTrack, or stop tracks by passing null.
+export const manageStream = (args: ManageStreamArgs) => {
+  const { streamType, stream: deviceStream, peers } = args;
+
+  const videoTrack = deviceStream?.getVideoTracks()[0] || null;
+  const audioTrack = deviceStream?.getAudioTracks()[0] || null;
+
+  manageTrack({
+    streamType,
+    peers,
+    track: videoTrack,
+    senderType: "video",
+  });
+
+  manageTrack({
+    streamType,
+    peers,
+    track: audioTrack,
+    senderType: "audio",
+  });
 };

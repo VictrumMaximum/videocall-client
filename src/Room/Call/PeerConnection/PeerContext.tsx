@@ -4,7 +4,7 @@ import { useSocket } from "../SocketConnection/SocketConnection";
 import { SocketUser, StreamType } from "../SocketConnection/SocketTypes";
 import { handleNewICECandidateMsg } from "./handlers/ICE";
 import { handleMediaAnswer, handleMediaOffer } from "./handlers/Negotiation";
-import { manageTrack } from "./handlers/TrackManagement";
+import { manageStream, manageTrack } from "./handlers/TrackManagement";
 import {
   handleUserJoinedRoom,
   handleUserLeftRoom,
@@ -13,7 +13,7 @@ import {
 export const PeersProvider: React.FC = ({ children }) => {
   const [peers, setPeers] = useState<Peers>({});
   const { publisher: socketPublisher, sendToServer } = useSocket();
-  const { camTrack, micTrack, screenVideoTrack } = useStreams();
+  const { camStream, micStream, screenStream } = useStreams();
 
   // Subscribe to socket messages with the appropriate handlers.
   // Unsubscribe and resubscribe when the useEffect dependencies are updated.
@@ -52,23 +52,22 @@ export const PeersProvider: React.FC = ({ children }) => {
   useEffect(() => {
     manageTrack({
       streamType: "camera",
-      track: camTrack,
+      track: camStream?.getVideoTracks()[0] || null,
       senderType: "video",
       peers,
     });
     manageTrack({
       streamType: "camera",
-      track: micTrack,
+      track: micStream?.getAudioTracks()[0] || null,
       senderType: "audio",
       peers,
     });
-    manageTrack({
+    manageStream({
       streamType: "screen",
-      track: screenVideoTrack,
-      senderType: "video",
+      stream: screenStream,
       peers,
     });
-  }, [camTrack, micTrack, screenVideoTrack, peers]);
+  }, [camStream, micStream, screenStream, peers]);
 
   // =========== Unmounting stuff ======================
   const unmountingRef = useRef(false);

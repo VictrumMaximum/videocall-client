@@ -28,6 +28,7 @@ export const SettingsPopup = () => {
       <div className={styles.centerContainer}>
         <div className={styles.header}>Settings</div>
         <div className={styles.contentContainer}>
+          v1.0
           <div className={styles.devicesContainer}>
             <CameraSelector devices={cameras} setDeviceId={setCameraDeviceId} />
             <MicrophoneSelector devices={microphones} setDeviceId={() => {}} />

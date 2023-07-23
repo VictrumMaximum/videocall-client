@@ -1,42 +1,37 @@
 import { useEffect, useState } from "react";
 
-export const useGenericTrack = (
-  getStream: () => Promise<MediaStream>,
-  kind: "audio" | "video"
-) => {
-  const [track, setTrack] = useState<MediaStreamTrack | null>(null);
+export const useGenericTrack = (getStream: () => Promise<MediaStream>) => {
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   const stop = () => {
-    if (track) {
-      track.stop();
-      setTrack(null);
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      setStream(null);
     }
   };
 
   const toggle = async () => {
-    if (track) {
+    if (stream) {
       stop();
       return;
     }
 
     try {
       const stream = await getStream();
-      const newTrack = stream.getTracks().find((t) => t.kind === kind) || null;
-      console.log(newTrack);
-      setTrack(newTrack);
+      setStream(stream);
     } catch (e) {
-      console.error("Error while creating track:");
+      console.error("Error while creating stream:");
       console.error(e);
     }
   };
 
   useEffect(() => {
-    if (track) {
+    if (stream) {
       return () => {
-        track?.stop();
+        stream.getTracks().forEach((track) => track.stop());
       };
     }
-  }, [track]);
+  }, [stream]);
 
-  return { track, toggle, stop };
+  return { stream, toggle, stop };
 };

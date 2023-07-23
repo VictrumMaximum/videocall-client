@@ -7,5 +7,5 @@ const getMicrophoneStream = () => {
 };
 
 export const useMicrophone = () => {
-  return useGenericTrack(getMicrophoneStream, "audio");
+  return useGenericTrack(getMicrophoneStream);
 };

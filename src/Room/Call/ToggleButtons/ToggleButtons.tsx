@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useStreams } from "../MediaStreams/StreamProvider";
 import styles from "./ToggleButtons.module.scss";
 
@@ -15,7 +14,6 @@ type ToggleButtonsProps = {
 };
 
 export const ToggleButtons = (props: ToggleButtonsProps) => {
-  const navigate = useNavigate();
   const { toggleCam, toggleMic, toggleScreenVideo } = useStreams();
 
   const toggleButtons: ToggleButton[] = [
@@ -38,7 +36,7 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
     {
       content: "Exit",
       onClick: () => {
-        navigate(`/videocall/${props.roomId}`);
+        window.location.href = `/videocall/${props.roomId}`;
       },
     },
   ];
@@ -62,7 +60,7 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
 };
 
 interface RoundButtonProps {
-  onClick?: (setEnabled: (enabled: boolean) => void) => void;
+  onClick: (setEnabled: (enabled: boolean) => void) => void;
   content: React.ReactNode;
   unreadMessageAmount?: number;
 }
@@ -71,11 +69,8 @@ const RoundButton = (props: RoundButtonProps) => {
   const [loading, setLoading] = useState(false);
 
   const handleOnClick = () => {
-    if (!props.onClick) {
-      return;
-    }
-
     setLoading(true);
+
     props.onClick(() => {
       setEnabled(enabled);
       setLoading(false);

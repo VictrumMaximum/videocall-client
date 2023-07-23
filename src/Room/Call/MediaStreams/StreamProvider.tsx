@@ -5,9 +5,9 @@ import { useMicrophone } from "./MicrophoneStream";
 import { useScreenVideo } from "./ScreenStream";
 
 interface IStreamContext {
-  camTrack: MediaStreamTrack | null;
-  micTrack: MediaStreamTrack | null;
-  screenVideoTrack: MediaStreamTrack | null;
+  camStream: MediaStream | null;
+  micStream: MediaStream | null;
+  screenStream: MediaStream | null;
   mediaDevices: MediaDeviceInfo[];
   toggleCam: () => void;
   toggleMic: () => void;
@@ -39,27 +39,26 @@ export const StreamProvider: React.FC = ({ children }) => {
   const [micConstraints, updateMicConstraints] =
     useUpdateState<MicrophoneConstraints>({});
 
-  const { track: camTrack, toggle: toggleCam } = useCamera(cameraConstraints);
-  const { track: micTrack, toggle: toggleMic } = useMicrophone();
-  const { track: screenVideoTrack, toggle: toggleScreenVideo } =
-    useScreenVideo();
+  const { stream: camStream, toggle: toggleCam } = useCamera(cameraConstraints);
+  const { stream: micStream, toggle: toggleMic } = useMicrophone();
+  const { stream: screenStream, toggle: toggleScreenVideo } = useScreenVideo();
 
   const value: IStreamContext = useMemo(
     () => ({
-      camTrack,
+      camStream,
       toggleCam,
       updateCameraConstraints,
-      micTrack,
+      micStream,
       toggleMic,
       setMicDeviceId: () => {},
-      screenVideoTrack,
+      screenStream,
       toggleScreenVideo,
       mediaDevices: [],
     }),
     [
-      camTrack,
-      micTrack,
-      screenVideoTrack,
+      camStream,
+      micStream,
+      screenStream,
       toggleCam,
       updateCameraConstraints,
       toggleMic,
