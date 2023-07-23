@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { useStreams } from "../MediaStreams/StreamProvider";
 import styles from "./ToggleButtons.module.scss";
 import { useTheme } from "../../../App";
+import { useSocket } from "../SocketConnection/SocketConnection";
 
 type ToggleButton = {
   content: string;
-  onClick: () => void;
+  onClick: () => Promise<void>;
 };
 
 type ToggleButtonsProps = {
@@ -17,6 +18,7 @@ type ToggleButtonsProps = {
 export const ToggleButtons = (props: ToggleButtonsProps) => {
   const { toggleCam, toggleMic, toggleScreenVideo } = useStreams();
   const { colors } = useTheme();
+  const { disconnect } = useSocket();
 
   const toggleButtons: ToggleButton[] = [
     {
@@ -33,11 +35,12 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
     },
     {
       content: "Chat",
-      onClick: () => props.toggleChat(),
+      onClick: () => Promise.resolve(props.toggleChat()),
     },
     {
       content: "Exit",
-      onClick: () => {
+      onClick: async () => {
+        disconnect();
         window.location.href = `/videocall/${props.roomId}`;
       },
     },
@@ -65,7 +68,7 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
 };
 
 interface RoundButtonProps {
-  onClick: (setEnabled: (enabled: boolean) => void) => void;
+  onClick: () => Promise<void>;
   content: React.ReactNode;
   unreadMessageAmount?: number;
 }
@@ -73,16 +76,22 @@ const RoundButton = (props: RoundButtonProps) => {
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  console.log(props.content);
+
   const { colors } = useTheme();
 
   const handleOnClick = () => {
+    console.log(props.content);
+    console.log("handle on click");
     setLoading(true);
 
-    props.onClick(() => {
+    props.onClick().then(() => {
       setEnabled(enabled);
       setLoading(false);
     });
   };
+
+  console.log(enabled);
 
   const activeClass = !loading && enabled ? styles.activeButton : "";
   const loadingClass = loading ? styles.loadingButton : "";

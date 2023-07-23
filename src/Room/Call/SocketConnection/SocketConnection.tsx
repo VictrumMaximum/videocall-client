@@ -38,6 +38,7 @@ export interface ISocketContext {
   publisher: SocketPublisher;
   localUser: LocalUser;
   sendToServer: (msg: MessageToServerValues) => void;
+  disconnect: () => void;
 }
 
 const SocketContext = createContext<ISocketContext | null>(null);
@@ -117,11 +118,13 @@ export const SocketProvider = ({
     };
   };
 
+  const disconnect = () => {
+    socketConnectionRef.current?.close(EXPLICIT_DISCONNECT_CODE);
+  };
+
   useEffect(() => {
     connect();
-    return () => {
-      socketConnectionRef.current?.close(EXPLICIT_DISCONNECT_CODE);
-    };
+    return () => disconnect();
   }, []);
 
   const sendToServer = useCallback((msg: MessageToServerValues) => {
@@ -136,7 +139,7 @@ export const SocketProvider = ({
   }, []);
 
   const value = useMemo(
-    () => ({ isConnected, publisher, localUser, sendToServer }),
+    () => ({ isConnected, publisher, localUser, sendToServer, disconnect }),
     [isConnected, publisher, localUser, sendToServer]
   );
 

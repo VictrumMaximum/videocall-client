@@ -9,9 +9,9 @@ interface IStreamContext {
   micStream: MediaStream | null;
   screenStream: MediaStream | null;
   mediaDevices: MediaDeviceInfo[];
-  toggleCam: () => void;
-  toggleMic: () => void;
-  toggleScreenVideo: () => void;
+  toggleCam: () => Promise<void>;
+  toggleMic: () => Promise<void>;
+  toggleScreenVideo: () => Promise<void>;
   updateCameraConstraints: (contraints: CameraConstraints) => void;
   setMicDeviceId: (deviceId: string) => void;
 }
