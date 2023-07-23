@@ -1,0 +1,30 @@
+.themeContainer {
+}
+
+.themeColorsContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+}
+
+.colorSelectContainer {
+  padding-right: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.colorSelector {
+  padding: 0.5rem 0;
+  user-select: none;
+}
+
+.saveButton {
+  margin-top: 1rem;
+  border: 1px solid black;
+  text-align: center;
+  width: fit-content;
+  padding: 0.5rem 1rem;
+  user-select: none;
+  cursor: pointer;
+}

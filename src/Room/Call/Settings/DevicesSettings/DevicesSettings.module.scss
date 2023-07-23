@@ -1,0 +1,13 @@
+.devicesContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.cameraSelectorContainer {
+  display: flex;
+  padding: 5px 0;
+}
+
+.cameraSelectorDropdown {
+  margin-left: 20px;
+}

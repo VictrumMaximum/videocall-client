@@ -12,14 +12,13 @@
 
 .header {
   font-size: 32px;
-  padding: 5px 20px 5px 20px;
+  padding: 15px 20px 15px 20px;
   border-bottom: 1px solid black;
 }
 
 .centerContainer {
   height: 70%;
   width: 70%;
-  background-color: rgb(19 85 90);
   border-radius: 5px;
   display: flex;
   flex-direction: column;
@@ -30,18 +29,5 @@
   justify-content: center;
   align-items: center;
   flex: 1;
-}
-
-.devicesContainer {
-  display: flex;
   flex-direction: column;
-}
-
-.cameraSelectorContainer {
-  display: flex;
-  padding: 5px 0;
-}
-
-.cameraSelectorDropdown {
-  margin-left: 20px;
 }

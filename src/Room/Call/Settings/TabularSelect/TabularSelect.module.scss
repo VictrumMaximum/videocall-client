@@ -1,0 +1,23 @@
+.tabBar {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: center;
+  border-collapse: collapse;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid black;
+  border-collapse: collapse;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tab:hover {
+  color: #7c7c7c;
+}
+
+.activeTab {
+  color: #7c7c7c;
+}

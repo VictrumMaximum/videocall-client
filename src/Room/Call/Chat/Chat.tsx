@@ -5,6 +5,7 @@ import styles from "./Chat.module.scss";
 import { targetValueSetter } from "../../../Utils/InputUtils";
 import { ReactComponent as RightArrow } from "./right-arrow.svg";
 import { useSocket } from "../SocketConnection/SocketConnection";
+import { useTheme } from "../../../App";
 
 type ChatMessage = {
   timestamp: Date;
@@ -107,6 +108,7 @@ interface ChatWindowProps {
 const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
   const [chatMessage, setChatMessage] = useState("");
   const [showFullChat, setShowFullChat] = useState(false);
+  const { colors } = useTheme();
 
   const messageListRef = useRef<HTMLDivElement | null>(null);
 
@@ -131,7 +133,10 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
   }, [messages.length, showFullChat]);
 
   return (
-    <div className={styles.chatContainer}>
+    <div
+      className={styles.chatContainer}
+      style={{ backgroundColor: colors.color3 }}
+    >
       <div className={styles.chatDialog}>
         <div
           className={styles.chatSizeToggleContainer}
@@ -148,6 +153,7 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
       </div>
       <div className={styles.chatInputContainer}>
         <TextareaAutosize
+          style={{ color: colors["text color 1"] }}
           minRows={1}
           maxRows={6}
           className={styles.chatInput}

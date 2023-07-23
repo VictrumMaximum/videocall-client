@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useStreams } from "../MediaStreams/StreamProvider";
 import styles from "./ToggleButtons.module.scss";
+import { useTheme } from "../../../App";
 
 type ToggleButton = {
   content: string;
@@ -15,6 +16,7 @@ type ToggleButtonsProps = {
 
 export const ToggleButtons = (props: ToggleButtonsProps) => {
   const { toggleCam, toggleMic, toggleScreenVideo } = useStreams();
+  const { colors } = useTheme();
 
   const toggleButtons: ToggleButton[] = [
     {
@@ -42,7 +44,10 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
   ];
 
   return (
-    <div className={styles.buttonContainer}>
+    <div
+      className={styles.buttonContainer}
+      style={{ color: colors["text color 1"] }}
+    >
       {toggleButtons.map(({ onClick, content }, i) => {
         return (
           <RoundButton
@@ -68,6 +73,8 @@ const RoundButton = (props: RoundButtonProps) => {
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const { colors } = useTheme();
+
   const handleOnClick = () => {
     setLoading(true);
 
@@ -84,9 +91,13 @@ const RoundButton = (props: RoundButtonProps) => {
     <div
       className={`${styles.roundButton} ${activeClass} ${loadingClass}`}
       onClick={handleOnClick}
+      style={{ backgroundColor: colors.color2 }}
     >
       {!!props.unreadMessageAmount && (
-        <div className={styles.notificationCounter}>
+        <div
+          className={styles.notificationCounter}
+          style={{ backgroundColor: colors.color3 }}
+        >
           {props.unreadMessageAmount}
         </div>
       )}

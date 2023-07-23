@@ -3,6 +3,7 @@ import { Call } from "./Call/Call";
 import { Navigate, useParams } from "react-router-dom";
 import { LocalStorage } from "../Utils/LocalStorage/LocalStorage";
 import { useEffect } from "react";
+import { useTheme } from "../App";
 
 // Hack to show the Welcome screen when navigating to the room directly through a link
 // but to show the actual room when navigated through the button on the Welcome screen.
@@ -12,6 +13,8 @@ export const setFilledInDetails = (bool: boolean) => (filledInDetails = bool);
 export const Room = () => {
   const params = useParams();
   const roomIdParam = params.roomId;
+
+  const { colors } = useTheme();
 
   useEffect(
     () => () => {
@@ -28,7 +31,10 @@ export const Room = () => {
   const nickname = LocalStorage.nickname.getNickname();
 
   return (
-    <div className={styles.mainContainer}>
+    <div
+      className={styles.mainContainer}
+      style={{ color: colors["text color 1"] }}
+    >
       <Call roomId={roomIdParam || ""} nickname={nickname} />
     </div>
   );

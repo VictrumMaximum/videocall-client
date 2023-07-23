@@ -7,12 +7,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { LocalStorage } from "../Utils/LocalStorage/LocalStorage";
 import { setFilledInDetails } from "../Room/Room";
 import { targetValueSetter } from "../Utils/InputUtils";
+import { useTheme } from "../App";
 
 interface Props {}
 
 export const Welcome = (props: Props) => {
   const params = useParams();
   const navigate = useNavigate();
+  const { colors } = useTheme();
 
   const roomIdParam = params.roomId || "";
   const lastNickname = LocalStorage.nickname.getNickname() || "";
@@ -36,7 +38,10 @@ export const Welcome = (props: Props) => {
   };
 
   return (
-    <div className={styles.welcomeScreen}>
+    <div
+      className={styles.welcomeScreen}
+      style={{ backgroundColor: colors.color3, color: colors["text color 1"] }}
+    >
       <div className={styles.bubbleContainer}>
         {bubbles.map(({ size, offsetBottom, offsetLeft }, i) => (
           <Bubble
@@ -49,11 +54,25 @@ export const Welcome = (props: Props) => {
       </div>
 
       <div className={styles.topContainer}>
-        <p className={styles.greeting}>Hello</p>
+        <p
+          className={styles.greeting}
+          style={{ backgroundColor: colors.color3 }}
+        >
+          Hello
+        </p>
       </div>
       <div className={styles.nicknameContainer}>
-        <p className={styles.nicknameHeader}>Your nickname</p>
+        <p
+          className={styles.nicknameHeader}
+          style={{ backgroundColor: colors.color3 }}
+        >
+          Your nickname
+        </p>
         <input
+          style={{
+            color: colors["text color 1"],
+            backgroundColor: colors.color2,
+          }}
           className={styles.nicknameInput}
           onChange={targetValueSetter(setAndSaveNickname)}
           value={nickname}
@@ -62,6 +81,10 @@ export const Welcome = (props: Props) => {
       <div className={styles.roomContainer}>
         <p className={styles.nicknameHeader}>Room name</p>
         <input
+          style={{
+            color: colors["text color 1"],
+            backgroundColor: colors.color2,
+          }}
           className={styles.nicknameInput}
           onChange={targetValueSetter(setRoomName)}
           value={roomName}
@@ -69,7 +92,11 @@ export const Welcome = (props: Props) => {
         />
       </div>
       <div className={styles.bottomContainer}>
-        <div className={styles.startButton} onClick={joinRoom}>
+        <div
+          className={styles.startButton}
+          style={{ backgroundColor: colors.color1 }}
+          onClick={joinRoom}
+        >
           Join
         </div>
       </div>
@@ -97,12 +124,13 @@ const Bubble = (props: BubbleProps) => {
   const size = `${props.size}px`;
   const offsetBottom = `${props.offsetBottom}%`;
   const offsetLeft = `${props.offsetLeft}%`;
+  const { colors } = useTheme();
   return (
     <CircleIcon
       width={size}
       height={size}
       style={{
-        stroke: "rgb(119 80 0)",
+        stroke: colors.color1,
         position: "fixed",
         bottom: offsetBottom,
         left: offsetLeft,
