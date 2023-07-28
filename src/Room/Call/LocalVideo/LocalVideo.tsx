@@ -16,8 +16,17 @@ export const LocalVideo = () => {
     return null;
   }
 
+  const handleClick = () => {
+    if (!camera.actualConstraints) {
+      return;
+    }
+    const currentFacingMode = camera.actualConstraints.facingMode;
+    const newFacingMode = currentFacingMode === "user" ? "environment" : "user";
+    camera.mergeConstraints({ facingMode: newFacingMode });
+  };
+
   return (
-    <div className={styles.localVideoContainer}>
+    <div className={styles.localVideoContainer} onClick={handleClick}>
       <video
         className={styles.videoElement}
         ref={videoRef}

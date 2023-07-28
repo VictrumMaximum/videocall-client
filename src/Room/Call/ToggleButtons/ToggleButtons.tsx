@@ -3,11 +3,11 @@ import { useStreams } from "../MediaStreams/StreamProvider";
 import styles from "./ToggleButtons.module.scss";
 import { useTheme } from "../../../App";
 import { useSocket } from "../SocketConnection/SocketConnection";
-import { Logger } from "../Settings/Logs/Logs";
 
 type ToggleButton = {
   content: string;
   onClick: () => Promise<void>;
+  active: boolean;
   enabled: boolean;
 };
 
@@ -27,22 +27,26 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
     {
       content: "Camera",
       onClick: camera.toggle,
-      enabled: !!camera.stream,
+      active: !!camera.stream,
+      enabled: true,
     },
     {
       content: "Mic",
       onClick: microphone.toggle,
-      enabled: !!microphone.stream,
+      active: !!microphone.stream,
+      enabled: true,
     },
     {
       content: "Screen",
       onClick: screen.toggle,
-      enabled: !!screen.stream,
+      active: !!screen.stream,
+      enabled: !!navigator.mediaDevices.getDisplayMedia,
     },
     {
       content: "Chat",
       onClick: () => Promise.resolve(props.toggleChat()),
-      enabled: props.showChat,
+      active: props.showChat,
+      enabled: true,
     },
     {
       content: "Exit",
@@ -50,7 +54,8 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
         disconnect();
         window.location.href = `/videocall/${props.roomId}`;
       },
-      enabled: false,
+      active: false,
+      enabled: true,
     },
   ];
 
@@ -59,12 +64,13 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
       className={styles.buttonContainer}
       style={{ color: colors["text color 1"] }}
     >
-      {toggleButtons.map(({ onClick, content, enabled }, i) => {
+      {toggleButtons.map(({ onClick, content, active, enabled }, i) => {
         return (
           <RoundButton
             key={i}
             onClick={onClick}
             content={content}
+            active={active}
             enabled={enabled}
             unreadMessageAmount={
               content === "Chat" ? props.unreadMessageAmount : undefined
@@ -80,20 +86,23 @@ interface RoundButtonProps {
   onClick: () => Promise<void>;
   content: React.ReactNode;
   unreadMessageAmount?: number;
+  active: boolean;
   enabled: boolean;
 }
 const RoundButton = (props: RoundButtonProps) => {
-  const { enabled } = props;
-  Logger.log(`${props.content} enabled is ${enabled}`);
-
+  const { active, enabled } = props;
   const { colors } = useTheme();
+
+  if (!enabled) {
+    return null;
+  }
 
   const handleOnClick = () => {
     props.onClick();
   };
 
-  const bgColor = enabled ? colors.color3 : colors.color2;
-  const textColor = enabled ? colors["text color 1"] : colors["text color 2"];
+  const bgColor = active ? colors.color3 : colors.color2;
+  const textColor = active ? colors["text color 1"] : colors["text color 2"];
 
   return (
     <div

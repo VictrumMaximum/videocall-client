@@ -3,13 +3,14 @@ import React, { useEffect, useState } from "react";
 import { useStreams } from "../../MediaStreams/StreamProvider";
 
 import styles from "./DevicesSettings.module.scss";
+import { Logger } from "../Logs/Logs";
 
 export const DevicesSettings = () => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const { camera } = useStreams();
 
   const setCameraDeviceId = (deviceId: string) => {
-    console.log(`Setting camera device id: ${deviceId}`);
+    Logger.log(`Setting camera device id: ${deviceId}`);
     camera.mergeConstraints({ deviceId });
   };
 

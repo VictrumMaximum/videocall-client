@@ -48,7 +48,7 @@ export const SettingsPopup = () => {
           items={items}
         />
         <div className={styles.contentContainer}>{content}</div>
-        <div className={styles.versionIndicator}>v1.07</div>
+        <div className={styles.versionIndicator}>v1.10</div>
       </div>
     </div>
   );
