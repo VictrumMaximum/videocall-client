@@ -1,3 +1,4 @@
+import { Logger } from "../../Settings/Logs/Logs";
 import {
   WithMessage,
   WithPeers,
@@ -36,6 +37,6 @@ export const handleNewICECandidateMsg = (
   if (peers[userId]) {
     peers[userId].connections[streamType].peerConnection
       .addIceCandidate(new RTCIceCandidate(msg.candidate))
-      .catch(console.error);
+      .catch(Logger.error);
   }
 };

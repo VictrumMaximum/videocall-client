@@ -1,3 +1,4 @@
+import { Logger } from "../../Settings/Logs/Logs";
 import { StreamType } from "../../SocketConnection/SocketTypes";
 import { Peer } from "../PeerContext";
 import { WithPeers } from "./HandlerArgsTypes";
@@ -40,7 +41,7 @@ export const manageTrack = (args: ManageTrackArgs) => {
     };
     for (const peer of Object.values(peers)) {
       sendTrack(peer);
-      console.log(peer.connections[streamType].dataChannel?.readyState);
+      Logger.log(peer.connections[streamType].dataChannel?.readyState);
       if (peer.connections[streamType].dataChannel?.readyState === "open") {
         peer.connections[streamType].dataChannel?.send(`${senderType}On`);
       }

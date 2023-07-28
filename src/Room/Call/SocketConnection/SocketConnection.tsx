@@ -15,6 +15,7 @@ import {
   MessageToClientValues,
   MessageToServerValues,
 } from "./SocketTypes";
+import { Logger } from "../Settings/Logs/Logs";
 
 export interface PeersState {
   [key: string]: {
@@ -79,14 +80,14 @@ export const SocketProvider = ({
   const publisher = publisherRef.current;
 
   const connect = () => {
-    console.log("Connecting websocket...");
+    Logger.log("Connecting websocket...");
 
     const ws = new WebSocket(socketUrl);
 
     socketConnectionRef.current = ws;
 
     ws.onopen = () => {
-      console.log("WebSocket connected!");
+      Logger.log("WebSocket connected!");
 
       setIsConnected(true);
 
@@ -103,13 +104,13 @@ export const SocketProvider = ({
 
       ws.onclose = (event: CloseEvent) => {
         if (event.code === EXPLICIT_DISCONNECT_CODE) {
-          console.log("WebSocket closed (explicit)");
+          Logger.log("WebSocket closed (explicit)");
           publisher.reset();
         } else {
           setIsConnected(false);
 
           // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-          console.error(`Unexpected websocket close, code ${event.code}`); // usual reason code: 1006
+          Logger.error(`Unexpected websocket close, code ${event.code}`); // usual reason code: 1006
 
           // Reconnect
           connect();
@@ -131,7 +132,7 @@ export const SocketProvider = ({
     const ws = socketConnectionRef.current;
 
     if (!ws) {
-      console.error(`Cannot send: socket not initialised`);
+      Logger.error(`Cannot send: socket not initialised`);
       return;
     }
 
@@ -150,7 +151,7 @@ export const SocketProvider = ({
 
 const _sendToServer = (ws: WebSocket, msg: MessageToServerValues) => {
   if (!isConnected(ws)) {
-    console.error("WebSocket is not connected");
+    Logger.error("WebSocket is not connected");
     return;
   }
 
@@ -207,6 +208,6 @@ const logIncomingMessage = (msg: MessageToClientValues) => {
   ];
 
   if (!ignoredMessageTypes.includes(msg.type)) {
-    console.log(msg);
+    Logger.log(msg);
   }
 };

@@ -9,6 +9,7 @@ import {
   WithUserId,
 } from "./HandlerArgsTypes";
 import { SocketUser, StreamType } from "../../SocketConnection/SocketTypes";
+import { Logger } from "../../Settings/Logs/Logs";
 
 export const handleUserJoinedRoom = (
   args: WithMessage<"user-joined-room"> &
@@ -66,7 +67,7 @@ export const handleUserJoinedRoom = (
     };
 
     pc.ontrack = (event: RTCTrackEvent) => {
-      console.log("ontrack");
+      Logger.log("ontrack");
       const [stream] = event.streams;
       const userId = peer.user.id;
 
@@ -113,7 +114,7 @@ export const handleUserJoinedRoom = (
 export const handleUserLeftRoom = (
   args: WithMessage<"user-left-room"> & WithSetPeers & WithPeers
 ) => {
-  console.log("handleUserLeftRoom");
+  Logger.log("handleUserLeftRoom");
   const { msg, peers, setPeers } = args;
 
   const remoteUserId = msg.source.id;
@@ -126,12 +127,7 @@ const removePeer = ({
   peers,
   setPeers,
 }: WithPeers & WithSetPeers & WithUserId) => {
-  console.log("before");
-  console.log(peers);
   const { [remoteUserId]: peer, ...rest } = peers;
-  const user = peer.user;
-
-  console.log(`user ${user.name || user.id} left the room`);
 
   Object.values(peer.connections).forEach((connection) => {
     if (connection.peerConnection.connectionState !== "closed") {
@@ -140,15 +136,12 @@ const removePeer = ({
     }
   });
 
-  console.log("set rest");
-  console.log(rest);
-
   setPeers(rest);
 };
 
 const createPeer = (user: SocketUser): Peer => {
-  console.log("Creating PeerConnection with user:");
-  console.log(user);
+  Logger.log("Creating PeerConnection with user:");
+  Logger.log(user);
 
   // Create object to keep data about peer in one place.
   return {
