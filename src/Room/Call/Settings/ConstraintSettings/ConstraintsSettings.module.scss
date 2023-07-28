@@ -1,0 +1,36 @@
+.container {
+  height: 100%;
+
+  display: flex;
+  flex-direction: row;
+
+  overflow: auto;
+}
+
+.constraintContainer {
+  flex: 1;
+}
+
+.constraintInputContainer {
+  padding: 0.2rem 0;
+}
+
+.constraintLabel {
+}
+
+.constraintInput {
+  margin-left: 1rem;
+  border-radius: 50px;
+  text-align: center;
+}
+
+.applyButton {
+  width: fit-content;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.actualConstraintsContainer {
+  flex: 1;
+}

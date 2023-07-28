@@ -17,17 +17,17 @@
 }
 
 .centerContainer {
-  height: 70%;
-  width: 70%;
+  height: 75%;
+  width: 100%;
+  max-width: 50rem;
   border-radius: 5px;
   display: flex;
   flex-direction: column;
 }
 
 .contentContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   flex: 1;
-  flex-direction: column;
+  overflow: auto;
+  padding: 1rem 1rem;
+  box-sizing: border-box;
 }

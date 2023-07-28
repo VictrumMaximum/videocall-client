@@ -6,18 +6,16 @@ import styles from "./DevicesSettings.module.scss";
 
 export const DevicesSettings = () => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const { updateCameraConstraints, toggleCam } = useStreams();
+  const { camera } = useStreams();
 
   const setCameraDeviceId = (deviceId: string) => {
     console.log(`Setting camera device id: ${deviceId}`);
-    updateCameraConstraints({ deviceId });
-    toggleCam();
-    toggleCam();
+    camera.mergeConstraints({ deviceId });
   };
 
   useEffect(() => {
     navigator.mediaDevices.enumerateDevices().then((x) => setDevices(x));
-  });
+  }, []);
 
   const cameras = devices.filter((device) => device.kind === "videoinput");
   const microphones = devices.filter((device) => device.kind === "audioinput");

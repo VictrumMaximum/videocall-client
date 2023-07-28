@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useStreams } from "../MediaStreams/StreamProvider";
 import styles from "./ToggleButtons.module.scss";
 import { useTheme } from "../../../App";
@@ -16,22 +16,22 @@ type ToggleButtonsProps = {
 };
 
 export const ToggleButtons = (props: ToggleButtonsProps) => {
-  const { toggleCam, toggleMic, toggleScreenVideo } = useStreams();
+  const { camera, microphone, screen } = useStreams();
   const { colors } = useTheme();
   const { disconnect } = useSocket();
 
   const toggleButtons: ToggleButton[] = [
     {
       content: "Camera",
-      onClick: toggleCam,
+      onClick: camera.toggle,
     },
     {
       content: "Mic",
-      onClick: toggleMic,
+      onClick: microphone.toggle,
     },
     {
       content: "Screen",
-      onClick: toggleScreenVideo,
+      onClick: screen.toggle,
     },
     {
       content: "Chat",
@@ -76,8 +76,6 @@ const RoundButton = (props: RoundButtonProps) => {
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  console.log(props.content);
-
   const { colors } = useTheme();
 
   const handleOnClick = () => {
@@ -86,21 +84,20 @@ const RoundButton = (props: RoundButtonProps) => {
     setLoading(true);
 
     props.onClick().then(() => {
-      setEnabled(enabled);
+      setEnabled((oldEnabled) => !oldEnabled);
       setLoading(false);
     });
   };
 
-  console.log(enabled);
-
-  const activeClass = !loading && enabled ? styles.activeButton : "";
-  const loadingClass = loading ? styles.loadingButton : "";
+  const bgColor = !loading && enabled ? colors.color3 : colors.color2;
+  const textColor =
+    !loading && enabled ? colors["text color 1"] : colors["text color 2"];
 
   return (
     <div
-      className={`${styles.roundButton} ${activeClass} ${loadingClass}`}
+      className={`${styles.roundButton}`}
       onClick={handleOnClick}
-      style={{ backgroundColor: colors.color2 }}
+      style={{ backgroundColor: bgColor, color: textColor }}
     >
       {!!props.unreadMessageAmount && (
         <div

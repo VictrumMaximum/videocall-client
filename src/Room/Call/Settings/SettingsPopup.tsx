@@ -5,10 +5,14 @@ import { DevicesSettings } from "./DevicesSettings/DevicesSettings";
 import { ThemeSettings } from "./ThemeSettings/ThemeSettings";
 import { useTheme } from "../../../App";
 import { TabularSelect } from "./TabularSelect/TabularSelect";
+import { ConstraintsSettings } from "./ConstraintSettings/ConstraintsSettings";
+import { Logs } from "./Logs/Logs";
 
 enum TabId {
   DEVICES = "Devices",
   THEME = "Theme",
+  CONSTRAINTS = "Constraints",
+  LOGS = "Logs",
 }
 
 export const SettingsPopup = () => {
@@ -21,10 +25,14 @@ export const SettingsPopup = () => {
         return <DevicesSettings />;
       case TabId.THEME:
         return <ThemeSettings />;
+      case TabId.CONSTRAINTS:
+        return <ConstraintsSettings />;
+      case TabId.LOGS:
+        return <Logs />;
     }
   }, [tab]);
 
-  const items = [{ label: TabId.DEVICES }, { label: TabId.THEME }];
+  const items = Object.values(TabId).map((label) => ({ label }));
 
   return (
     <div className={styles.container}>
@@ -33,7 +41,7 @@ export const SettingsPopup = () => {
         style={{ backgroundColor: colors.color3 }}
       >
         <div className={styles.header}>Settings</div>
-        <div>v1.04</div>
+        <div>v1.06</div>
         <TabularSelect
           orientation="row"
           activeItem={tab}

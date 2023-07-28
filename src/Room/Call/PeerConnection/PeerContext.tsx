@@ -13,7 +13,7 @@ import {
 export const PeersProvider: React.FC = ({ children }) => {
   const [peers, setPeers] = useState<Peers>({});
   const { publisher: socketPublisher, sendToServer } = useSocket();
-  const { camStream, micStream, screenStream } = useStreams();
+  const { camera, microphone, screen } = useStreams();
 
   // Subscribe to socket messages with the appropriate handlers.
   // Unsubscribe and resubscribe when the useEffect dependencies are updated.
@@ -52,22 +52,22 @@ export const PeersProvider: React.FC = ({ children }) => {
   useEffect(() => {
     manageTrack({
       streamType: "camera",
-      track: camStream?.getVideoTracks()[0] || null,
+      track: camera.track || null,
       senderType: "video",
       peers,
     });
     manageTrack({
       streamType: "camera",
-      track: micStream?.getAudioTracks()[0] || null,
+      track: microphone.track || null,
       senderType: "audio",
       peers,
     });
     manageStream({
       streamType: "screen",
-      stream: screenStream,
+      stream: screen.stream,
       peers,
     });
-  }, [camStream, micStream, screenStream, peers]);
+  }, [camera, microphone, screen, peers]);
 
   // =========== Unmounting stuff ======================
   const unmountingRef = useRef(false);

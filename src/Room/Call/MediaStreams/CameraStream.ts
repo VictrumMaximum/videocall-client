@@ -1,9 +1,10 @@
 import { useGenericTrack } from "./GenericStream";
+import { useUserMedia } from "./UserMediaStream";
 
-type Constraints = Exclude<MediaStreamConstraints["video"], true>;
+const getCameraStream = (constraints: MediaTrackConstraints | boolean) => {
+  return navigator.mediaDevices.getUserMedia({ video: constraints });
+};
 
-export const useCamera = (constraints: Constraints) => {
-  return useGenericTrack(() =>
-    navigator.mediaDevices.getUserMedia({ video: constraints })
-  );
+export const useCamera = () => {
+  return useUserMedia(getCameraStream, {});
 };

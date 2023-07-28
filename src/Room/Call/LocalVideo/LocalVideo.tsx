@@ -3,16 +3,16 @@ import { useStreams } from "../MediaStreams/StreamProvider";
 import styles from "./LocalVideo.module.scss";
 
 export const LocalVideo = () => {
-  const { camStream } = useStreams();
+  const { camera } = useStreams();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.srcObject = camStream;
+      videoRef.current.srcObject = camera.stream;
     }
-  }, [camStream]);
+  }, [camera.stream]);
 
-  if (!camStream) {
+  if (!camera.stream) {
     return null;
   }
 

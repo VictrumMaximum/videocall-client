@@ -1,11 +1,10 @@
 import { useGenericTrack } from "./GenericStream";
+import { useUserMedia } from "./UserMediaStream";
 
-const getMicrophoneStream = () => {
-  return navigator.mediaDevices.getUserMedia({
-    audio: true,
-  });
+const getMicrophoneStream = (constraints: MediaTrackConstraints) => {
+  return navigator.mediaDevices.getUserMedia({ audio: constraints });
 };
 
 export const useMicrophone = () => {
-  return useGenericTrack(getMicrophoneStream);
+  return useUserMedia(getMicrophoneStream, {});
 };

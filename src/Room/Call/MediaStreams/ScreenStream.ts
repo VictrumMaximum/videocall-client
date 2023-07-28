@@ -1,12 +1,12 @@
 import { useGenericTrack } from "./GenericStream";
 
-const getScreenVideoStream = () => {
-  return navigator.mediaDevices.getDisplayMedia({
-    video: true,
-    audio: true,
-  });
+const getScreenVideoStream = (constraints: DisplayMediaStreamOptions) => {
+  return navigator.mediaDevices.getDisplayMedia(constraints);
 };
 
 export const useScreenVideo = () => {
-  return useGenericTrack(getScreenVideoStream);
+  return useGenericTrack(getScreenVideoStream, {
+    video: true,
+    audio: true,
+  });
 };
