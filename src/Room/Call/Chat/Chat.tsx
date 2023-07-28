@@ -142,10 +142,15 @@ const ChatWindow = ({ messages, onSend }: ChatWindowProps) => {
           className={styles.chatSizeToggleContainer}
           onClick={() => setShowFullChat(!showFullChat)}
         >
-          <RightArrow
-            className={styles.chatSizeToggleArrow}
-            style={{ rotate: showFullChat ? "90deg" : "-90deg" }}
-          />
+          <div className={styles.chatSizeToggleArrowContainer}>
+            <RightArrow
+              className={styles.chatSizeToggleArrow}
+              style={{ rotate: showFullChat ? "90deg" : "-90deg" }}
+            />
+          </div>
+          <div className={styles.chatSizeToggleTextContainer}>
+            {showFullChat ? "shrink" : "expand"}
+          </div>
         </div>
         <div className={styles.messageList} ref={messageListRef}>
           {shownMessages.map(getMessageElement)}

@@ -50,7 +50,7 @@ export const Logs = () => {
             type === "normal" ? styles.normalMessage : styles.errorMessage
           }`}
         >
-          <span>{timestamp.toISOString()}</span>
+          <span>{timestamp.toLocaleTimeString()}</span>
           <span className={styles.messageContent}>{message}</span>
         </div>
       ))}
