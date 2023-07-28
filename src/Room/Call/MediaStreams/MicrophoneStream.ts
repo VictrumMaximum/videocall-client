@@ -1,4 +1,3 @@
-import { useGenericTrack } from "./GenericStream";
 import { useUserMedia } from "./UserMediaStream";
 
 const getMicrophoneStream = (constraints: MediaTrackConstraints) => {

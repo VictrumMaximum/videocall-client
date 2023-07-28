@@ -5,16 +5,37 @@ import styles from "./Logs.module.scss";
 type LogMessage = {
   message: string;
   type: "normal" | "error";
+  timestamp: Date;
 };
 
-export const logNormal = (message: any) => {
+const convertToString = (e: any) => {
+  if (e.toString) {
+    return e.toString();
+  }
+  return JSON.stringify(e, null, 2);
+};
+
+const logNormal = (message: any) => {
   console.log(message);
-  logs.push({ message: JSON.stringify(message, null, 2), type: "normal" });
+  log(message, "normal");
 };
 
-export const logError = (message: any) => {
+const logError = (message: any) => {
   console.error(message);
-  logs.push({ message: JSON.stringify(message, null, 2), type: "error" });
+  log(message, "error");
+};
+
+const log = (message: any, type: LogMessage["type"]) => {
+  logs.push({
+    message: convertToString(message),
+    type,
+    timestamp: new Date(),
+  });
+};
+
+export const Logger = {
+  log: logNormal,
+  error: logError,
 };
 
 const logs: LogMessage[] = [];
@@ -22,14 +43,15 @@ const logs: LogMessage[] = [];
 export const Logs = () => {
   return (
     <div className={styles.container}>
-      {logs.map(({ message, type }, i) => (
+      {logs.map(({ message, type, timestamp }, i) => (
         <div
           key={i}
-          className={`${styles.message} ${
+          className={`${styles.messageContainer} ${
             type === "normal" ? styles.normalMessage : styles.errorMessage
           }`}
         >
-          {message}
+          <span>{timestamp.toISOString()}</span>
+          <span className={styles.messageContent}>{message}</span>
         </div>
       ))}
     </div>

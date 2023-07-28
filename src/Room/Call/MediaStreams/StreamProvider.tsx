@@ -2,14 +2,12 @@ import React, { createContext, useContext, useMemo } from "react";
 import { useCamera } from "./CameraStream";
 import { useMicrophone } from "./MicrophoneStream";
 import { useScreenVideo } from "./ScreenStream";
-import { GenericStream } from "./GenericStream";
 import { useUserMedia } from "./UserMediaStream";
 
 interface IStreamContext {
   camera: ReturnType<typeof useUserMedia>;
   microphone: ReturnType<typeof useUserMedia>;
-  screen: GenericStream;
-  mediaDevices: MediaDeviceInfo[];
+  screen: ReturnType<typeof useScreenVideo>;
 }
 
 const StreamContext = createContext<IStreamContext | null>(null);
@@ -24,7 +22,6 @@ export const StreamProvider: React.FC = ({ children }) => {
       camera,
       microphone,
       screen,
-      mediaDevices: [],
     }),
     [camera, microphone, screen]
   );

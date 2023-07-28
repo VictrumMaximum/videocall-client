@@ -40,6 +40,7 @@ export const CallContent = ({ roomId }: Props) => {
       <ToggleButtons
         roomId={roomId}
         toggleChat={toggleChat}
+        showChat={showChat}
         unreadMessageAmount={unreadMessageAmount}
       />
       <Chat

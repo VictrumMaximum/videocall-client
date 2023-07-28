@@ -41,15 +41,11 @@
 }
 
 .nicknameInput {
-  // width: 80%;
   height: 40px;
-  // border-radius: 15px;
   font-size: 24px;
   text-align: center;
-  // border: 2px solid #6600ff;
   font-family: "Roboto Condensed";
   font-weight: 600;
-  // background-color: rgb(92 92 92);
 }
 
 .roomContainer {
@@ -86,7 +82,6 @@
 
 .bottomContainer {
   flex: 1;
-  // flex-basis: 40%;
   display: flex;
   flex-direction: column;
   justify-content: center;

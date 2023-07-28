@@ -1,17 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useStreams } from "../MediaStreams/StreamProvider";
 import styles from "./ToggleButtons.module.scss";
 import { useTheme } from "../../../App";
 import { useSocket } from "../SocketConnection/SocketConnection";
+import { Logger } from "../Settings/Logs/Logs";
 
 type ToggleButton = {
   content: string;
   onClick: () => Promise<void>;
+  enabled: boolean;
 };
 
 type ToggleButtonsProps = {
   roomId: string;
   toggleChat: () => void;
+  showChat: boolean;
   unreadMessageAmount: number;
 };
 
@@ -24,18 +27,22 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
     {
       content: "Camera",
       onClick: camera.toggle,
+      enabled: !!camera.stream,
     },
     {
       content: "Mic",
       onClick: microphone.toggle,
+      enabled: !!microphone.stream,
     },
     {
       content: "Screen",
       onClick: screen.toggle,
+      enabled: !!screen.stream,
     },
     {
       content: "Chat",
       onClick: () => Promise.resolve(props.toggleChat()),
+      enabled: props.showChat,
     },
     {
       content: "Exit",
@@ -43,6 +50,7 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
         disconnect();
         window.location.href = `/videocall/${props.roomId}`;
       },
+      enabled: false,
     },
   ];
 
@@ -51,12 +59,13 @@ export const ToggleButtons = (props: ToggleButtonsProps) => {
       className={styles.buttonContainer}
       style={{ color: colors["text color 1"] }}
     >
-      {toggleButtons.map(({ onClick, content }, i) => {
+      {toggleButtons.map(({ onClick, content, enabled }, i) => {
         return (
           <RoundButton
             key={i}
             onClick={onClick}
             content={content}
+            enabled={enabled}
             unreadMessageAmount={
               content === "Chat" ? props.unreadMessageAmount : undefined
             }
@@ -71,27 +80,20 @@ interface RoundButtonProps {
   onClick: () => Promise<void>;
   content: React.ReactNode;
   unreadMessageAmount?: number;
+  enabled: boolean;
 }
 const RoundButton = (props: RoundButtonProps) => {
-  const [enabled, setEnabled] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { enabled } = props;
+  Logger.log(`${props.content} enabled is ${enabled}`);
 
   const { colors } = useTheme();
 
   const handleOnClick = () => {
-    console.log(props.content);
-    console.log("handle on click");
-    setLoading(true);
-
-    props.onClick().then(() => {
-      setEnabled((oldEnabled) => !oldEnabled);
-      setLoading(false);
-    });
+    props.onClick();
   };
 
-  const bgColor = !loading && enabled ? colors.color3 : colors.color2;
-  const textColor =
-    !loading && enabled ? colors["text color 1"] : colors["text color 2"];
+  const bgColor = enabled ? colors.color3 : colors.color2;
+  const textColor = enabled ? colors["text color 1"] : colors["text color 2"];
 
   return (
     <div

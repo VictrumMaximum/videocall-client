@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { logError, logNormal } from "../Settings/Logs/Logs";
+import { Logger } from "../Settings/Logs/Logs";
 
 export const useUserMedia = (
   getStream: (constraints: MediaTrackConstraints) => Promise<MediaStream>,
   initialConstraints: MediaTrackConstraints
 ) => {
-  logNormal("hello useUserMedia");
   const [stream, setStream] = useState<MediaStream | null>(null);
   const constraintsRef = useRef<MediaTrackConstraints>(initialConstraints);
 
@@ -20,14 +19,14 @@ export const useUserMedia = (
 
   const start = async () => {
     try {
-      console.log("getting stream with constraints");
-      console.log(constraintsRef.current);
+      Logger.log("getting stream with constraints");
+      Logger.log(constraintsRef.current);
 
       const newStream = await getStream(constraintsRef.current);
       setStream(newStream);
     } catch (e: any) {
-      logError("Error while creating stream:");
-      logError(e.toString());
+      Logger.error("Error while creating stream:");
+      Logger.error(e);
     }
   };
 
@@ -40,18 +39,14 @@ export const useUserMedia = (
   };
 
   const mergeConstraints = async (newConstraints: MediaTrackConstraints) => {
-    console.log("merging constraints with");
-    console.log(newConstraints);
+    Logger.log("merging constraints with");
+    Logger.log(newConstraints);
 
     constraintsRef.current = {
       ...constraintsRef.current,
       ...newConstraints,
     };
 
-    await applyConstraints();
-  };
-
-  const applyConstraints = async () => {
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
       await start();
