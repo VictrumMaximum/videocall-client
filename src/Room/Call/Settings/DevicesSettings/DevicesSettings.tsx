@@ -7,11 +7,16 @@ import { Logger } from "../Logs/Logs";
 
 export const DevicesSettings = () => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const { camera } = useStreams();
+  const { camera, microphone } = useStreams();
 
   const setCameraDeviceId = (deviceId: string) => {
     Logger.log(`Setting camera device id: ${deviceId}`);
     camera.mergeConstraints({ deviceId });
+  };
+
+  const setMicrophoneId = (deviceId: string) => {
+    Logger.log(`Setting microphone device id: ${deviceId}`);
+    microphone.mergeConstraints({ deviceId });
   };
 
   useEffect(() => {
@@ -25,7 +30,7 @@ export const DevicesSettings = () => {
   return (
     <div className={styles.devicesContainer}>
       <CameraSelector devices={cameras} setDeviceId={setCameraDeviceId} />
-      <MicrophoneSelector devices={microphones} setDeviceId={() => {}} />
+      <MicrophoneSelector devices={microphones} setDeviceId={setMicrophoneId} />
       <SpeakersSelector devices={speakers} setDeviceId={() => {}} />
     </div>
   );
@@ -56,13 +61,20 @@ const CameraSelector = ({ devices, setDeviceId }: DevicesProps) => {
   );
 };
 
-const MicrophoneSelector = ({ devices }: DevicesProps) => {
+const MicrophoneSelector = ({ devices, setDeviceId }: DevicesProps) => {
   return (
     <div className={styles.cameraSelectorContainer}>
       <span>Microphone</span>
-      <select className={styles.cameraSelectorDropdown}>
+      <select
+        className={styles.cameraSelectorDropdown}
+        onChange={(e) => setDeviceId(e.target.value)}
+      >
         {devices.map((device) => {
-          return <option key={device.label}>{device.label}</option>;
+          return (
+            <option key={device.label} value={device.deviceId}>
+              {device.label}
+            </option>
+          );
         })}
       </select>
     </div>
